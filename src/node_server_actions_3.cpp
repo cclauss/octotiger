@@ -241,19 +241,22 @@ void line_of_centers_analyze(const line_of_centers_t& loc, real omega, std::pair
 
 void node_server::execute_solver(bool scf, node_count_type ngrids) {
 	timings_.times_[timings::time_regrid] = 0.0;
-	timings::scope ts(timings_, timings::time_total);
 	integer output_cnt{};
 //	output_all("X", 0, false);
 
 	if (!opts().hydro && !opts().radiation) {
-//		diagnostics();
+		diagnostics();
 		if (!opts().disable_output) {
 			output_all("final", output_cnt, true);
 		}
 		if (get_analytic() != nullptr) {
 			compare_analytic();
 			if( opts().gravity ) {
+std::cout << "solving gravity..." << std::endl;
+	timings::scope ts(timings_, timings::time_total);
+for (int n=0; n<100;n++) {
 				solve_gravity(true, false);
+}
 			}
 			if (!opts().disable_output) {
 				output_all("analytic", output_cnt, true);

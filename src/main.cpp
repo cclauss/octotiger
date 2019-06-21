@@ -436,9 +436,9 @@ int hpx_main(int argc, char* argv[]) {
 			}
 
 			if (opts().gravity) {
-				printf("solving gravity------------\n");
-				root->solve_gravity(false, false);
-				printf("...done\n");
+				//printf("solving gravity------------\n");
+				//root->solve_gravity(false, false);
+				//printf("...done\n");
 			}
 			hpx::async(&node_server::execute_solver, root, opts().problem == DWD && opts().restart_filename.empty(), ngrids).get();
 			root->report_timing();

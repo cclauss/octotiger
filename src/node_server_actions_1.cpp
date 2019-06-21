@@ -229,7 +229,10 @@ node_count_type node_server::regrid(const hpx::id_type& root_gid, real omega, re
 	tstop = timer.elapsed();
 	printf("Formed tree in %f seconds\n", real(tstop - tstart));
 	printf("solving gravity\n");
-	solve_gravity(grav_energy_comp, !opts().output_filename.empty());
+{
+	//timings::scope ts(timings_, timings::time_total);
+	//solve_gravity(grav_energy_comp, !opts().output_filename.empty());
+}
 	double elapsed = timer.elapsed();
 	printf("regrid done in %f seconds\n---------------------------------------\n", elapsed);
 	return a;
