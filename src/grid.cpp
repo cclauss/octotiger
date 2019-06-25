@@ -2807,7 +2807,6 @@ void grid::reconstruct_vc() {
         }
         // TODO ztwd method not vectorized 
         if (opts().eos == WD) {
-          std::cout << "WD!!!" << std::endl;
             for (integer i = H_BW - 1; i != H_NX - H_BW + 1; ++i) {
                 for (integer j = H_BW - 1; j != H_NX - H_BW + 1; ++j) {
                     for (integer k = H_BW - 1; k != H_NX - H_BW + 1; ++k) {
