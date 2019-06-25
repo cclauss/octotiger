@@ -337,6 +337,8 @@ public:
 	const std::vector<boundary_interaction_type>& get_ilist_n_bnd(const geo::direction &dir);
 	void allocate();
 	void reconstruct();
+	void reconstruct_vc();
+	void reconstruct_legacy();
 	void store();
 	void restore();
 	real compute_fluxes();

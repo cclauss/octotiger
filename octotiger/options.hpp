@@ -37,6 +37,8 @@ public:
 	bool v1309;
 	bool rad_implicit;
 	bool rewrite_silo;
+    bool use_legacy_reconstruct;
+    bool reconstruct_loop10;
 
 	integer extra_regrid;
 	integer accretor_refine;
@@ -151,6 +153,8 @@ public:
 		arc & code_to_g;
 		arc & code_to_s;
 		arc & code_to_cm;
+        arc & use_legacy_reconstruct;
+        arc & reconstruct_loop10;
 	}
 
 	bool process_options(int argc, char* argv[]);
