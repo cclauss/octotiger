@@ -8,21 +8,30 @@
 #define NEW_LIMITER
 
 template<int NDIM, int INX>
-const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::state_type &U_, const hydro::x_type &X, safe_real omega) {
+const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::state_type &U_, const hydro::x_type &X,
+		safe_real omega) {
 
-	static thread_local auto D1 = std::vector<std::array<safe_real, geo::NDIR / 2>>(geo::H_N3);
-	static thread_local auto Q = std::vector < std::vector<std::array<safe_real, geo::NDIR>> > (nf_, std::vector<std::array<safe_real, geo::NDIR>>(geo::H_N3));
+	static thread_local std::vector<std::array<safe_real, geo::NDIR / 2>> D1; 
+	if (D1.empty())
+		D1 = std::vector<std::array<safe_real, geo::NDIR / 2>>(geo::H_N3);
+	static thread_local std::vector < std::vector<std::array<safe_real, geo::NDIR>>> Q;
+	// TODO is nf_ changing?
+	if (Q.empty())
+		Q = std::vector < std::vector<std::array<safe_real, geo::NDIR>>> (nf_, std::vector<std::array<safe_real, geo::NDIR>>(geo::H_N3));
+
 
 	static constexpr auto xloc = geo::xloc();
 	static constexpr auto kdelta = geo::kronecker_delta();
 	static constexpr auto vw = geo::volume_weight();
 	static constexpr auto dir = geo::direction();
 
-	static const auto indices1 = geo::find_indices(1, geo::H_NX - 1);
-	static const auto indices2 = geo::find_indices(2, geo::H_NX - 2);
+	// static const auto indices3 = geo::find_indices(2, geo::H_NX - 2, 27); 
+	// for (const auto i : indices3) {
+	// 	std::cout << i << " ";
+	// }
 
 	const auto dx = X[0][geo::H_DNX] - X[0][0];
-	auto U = physics < NDIM > ::template pre_recon<INX>(U_, X, omega, angmom_count_ > 0);
+	auto U = physics < NDIM > ::template pre_recon_vectorized<INX>(U_, X, omega, angmom_count_ > 0, indices3);
 
 	const auto measure_angmom = [dx](const std::array<std::array<safe_real, geo::NDIR>, NDIM> &C) {
 		std::array < safe_real, geo::NANGMOM > L;
@@ -110,6 +119,7 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::sta
 		}
 
 	} else {
+		// 4 mostly
 		for (int f = 0; f < angmom_index_; f++) {
 			reconstruct_ppm(Q[f], U[f], smooth_field_[f]);
 		}
@@ -123,7 +133,6 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::sta
 			}
 
 			for (const auto &i : indices2) {
-
 				std::array < safe_real, geo::NANGMOM > Z;
 				std::array<std::array<safe_real, geo::NDIR>, NDIM> S;
 				for (int dim = 0; dim < geo::NANGMOM; dim++) {
@@ -193,7 +202,7 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::sta
 
 	}
 
-	Q = physics < NDIM > ::template post_recon<INX>(Q, X, omega, angmom_count_ > 0);
+	Q = physics < NDIM > ::template post_recon_vectorized<INX>(Q, X, omega, angmom_count_ > 0, indices2);
 	return Q;
 }
 

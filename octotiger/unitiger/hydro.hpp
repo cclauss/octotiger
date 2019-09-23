@@ -40,6 +40,11 @@ template<int NDIM, int INX>
 struct hydro_computer: public cell_geometry<NDIM, INX> {
 	using geo = cell_geometry<NDIM,INX>;
 
+	// Required static variables
+	static const std::vector<int> indices1; // size: 1728
+	static const std::vector<int> indices2; // size: 1000
+	static const std::vector<int> indices3; 
+
 	enum bc_type {OUTFLOW, PERIODIC};
 
 	const hydro::recon_type<NDIM>& reconstruct(hydro::state_type &U, const hydro::x_type&, safe_real );
@@ -82,6 +87,12 @@ private:
 	std::vector<bc_type> bc_;
 }
 ;
+template<int NDIM, int INX>
+const std::vector<int> hydro_computer<NDIM, INX>::indices1 = geo::find_indices(1, geo::H_NX - 1); // size: 1728
+template<int NDIM, int INX>
+const std::vector<int> hydro_computer<NDIM, INX>::indices2 = geo::find_indices(2, geo::H_NX - 2); // size: 1000
+template<int NDIM, int INX>
+const std::vector<int> hydro_computer<NDIM, INX>::indices3 = geo::find_indices(0, geo::H_NX); 
 
 #include "hydro_impl/hydro.hpp"
 

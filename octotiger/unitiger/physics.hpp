@@ -200,9 +200,65 @@ static const hydro::state_type pre_recon(const hydro::state_type &U, const hydro
 }
 
 template<int INX>
+static const hydro::state_type pre_recon_vectorized(const hydro::state_type &U, const hydro::x_type X, safe_real omega, bool angmom, const std::vector<int> &indices) {
+	static const cell_geometry<NDIM, INX> geo;
+	auto V = U;
+	const auto dx = X[0][geo.H_DNX] - X[0][0];
+	for (const auto &i : indices) {
+		const auto rho = V[rho_i][i];
+		const auto rhoinv = 1.0 / rho;
+		for (int dim = 0; dim < NDIM; dim++) {
+			auto &s = V[sx_i + dim][i];
+			V[egas_i][i] -= 0.5 * s * s * rhoinv;
+			s *= rhoinv;
+		}
+		for (int si = 0; si < n_species_; si++) {
+			V[spc_i + si][i] *= rhoinv;
+		}
+		V[pot_i][i] *= rhoinv;
+	}
+	return V;
+}
+
+template<int INX>
 static hydro::recon_type<NDIM> post_recon(const hydro::recon_type<NDIM> &P, const hydro::x_type X, safe_real omega, bool angmom) {
 	static const cell_geometry<NDIM, INX> geo;
 	static const auto indices = geo.find_indices(2, geo.H_NX - 2);
+	auto Q = P;
+	const auto dx = X[0][geo.H_DNX] - X[0][0];
+	for (const auto &i : indices) {
+		for (int d = 0; d < geo.NDIR; d++) {
+			if (d != geo.NDIR / 2) {
+				const auto rho = Q[rho_i][i][d];
+				for (int dim = 0; dim < NDIM; dim++) {
+					auto &v = Q[sx_i + dim][i][d];
+					Q[egas_i][i][d] += 0.5 * v * v * rho;
+					v *= rho;
+				}
+				Q[pot_i][i][d] *= rho;
+				safe_real w = 0.0;
+				for (int si = 0; si < n_species_; si++) {
+					w += Q[spc_i + si][i][d];
+					Q[spc_i + si][i][d] *= rho;
+				}
+				if (w == 0.0) {
+					printf("NO SPECIES %i\n", i);
+					//		sleep(10);
+					abort();
+				}
+				w = 1.0 / w;
+				for (int si = 0; si < n_species_; si++) {
+					Q[spc_i + si][i][d] *= w;
+				}
+			}
+		}
+	}
+	return Q;
+}
+
+template<int INX>
+static hydro::recon_type<NDIM> post_recon_vectorized(const hydro::recon_type<NDIM> &P, const hydro::x_type X, safe_real omega, bool angmom, const std::vector<int> &indices) {
+	static const cell_geometry<NDIM, INX> geo;
 	auto Q = P;
 	const auto dx = X[0][geo.H_DNX] - X[0][0];
 	for (const auto &i : indices) {

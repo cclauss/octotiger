@@ -294,6 +294,14 @@ public:
 		std::vector<int> I;
 		std::array<int, NDIM> lbs;
 		std::array<int, NDIM> ubs;
+		bool output = false;
+		if (d == NDIR / 2 || d == 26) {
+			if (lb == 1 && ub == H_NX - 1)
+				output = false;
+			if (lb == 2 && ub == H_NX - 2)
+				output = false;
+		}
+
 		for (int dim = 0; dim < NDIM; dim++) {
 			ubs[dim] = xloc()[d][dim] == -1 ? (ub + 1) : ub;
 			lbs[dim] = xloc()[d][dim] == +1 ? (lb - 1) : lb;
@@ -310,7 +318,26 @@ public:
 			}
 			if (interior) {
 				I.push_back(i);
+				if (output)
+					std::cout << " " << i << "  ";
+			} else {
+				if (output)
+					std::cout << "-" << i << "- ";
 			}
+			if (output) {
+				if ((i + 1) % H_NX == 0)
+					std::cout << std::endl;
+				if ((i + 1) % (H_NX * H_NX) == 0)
+					std::cout << std::endl;
+			}
+		}
+		if (output) {
+			for (int dim = 0; dim < NDIM; dim++) {
+				std::cout << xloc()[d][dim] << std::endl;
+				std::cout << ubs[dim] << " -- " << lbs[dim] << std::endl;
+			}
+			std::cout << lb << " -- " << ub << "--" << d << std::endl;
+			std::cin.get();
 		}
 		return I;
 	}
