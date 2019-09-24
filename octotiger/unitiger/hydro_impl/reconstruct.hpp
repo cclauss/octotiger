@@ -3,7 +3,8 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include "../util.hpp"
+#include "../hydro.hpp"
+#include "../physics.hpp"
 
 #define NEW_LIMITER
 
@@ -19,19 +20,13 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::sta
 	if (Q.empty())
 		Q = std::vector < std::vector<std::array<safe_real, geo::NDIR>>> (nf_, std::vector<std::array<safe_real, geo::NDIR>>(geo::H_N3));
 
-
 	static constexpr auto xloc = geo::xloc();
 	static constexpr auto kdelta = geo::kronecker_delta();
 	static constexpr auto vw = geo::volume_weight();
 	static constexpr auto dir = geo::direction();
 
-	// static const auto indices3 = geo::find_indices(2, geo::H_NX - 2, 27); 
-	// for (const auto i : indices3) {
-	// 	std::cout << i << " ";
-	// }
-
 	const auto dx = X[0][geo::H_DNX] - X[0][0];
-	auto U = physics < NDIM > ::template pre_recon_vectorized<INX>(U_, X, omega, angmom_count_ > 0, indices3);
+	auto U = physics < NDIM > ::template pre_recon_vc<INX>(U_, X, omega, angmom_count_ > 0);
 
 	const auto measure_angmom = [dx](const std::array<std::array<safe_real, geo::NDIR>, NDIM> &C) {
 		std::array < safe_real, geo::NANGMOM > L;

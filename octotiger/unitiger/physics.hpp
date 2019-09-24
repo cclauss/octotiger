@@ -2,6 +2,7 @@
 //
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+#include <Vc/Vc>
 
 #include "./safe_real.hpp"
 #include "./util.hpp"
@@ -200,22 +201,30 @@ static const hydro::state_type pre_recon(const hydro::state_type &U, const hydro
 }
 
 template<int INX>
-static const hydro::state_type pre_recon_vectorized(const hydro::state_type &U, const hydro::x_type X, safe_real omega, bool angmom, const std::vector<int> &indices) {
+static const hydro::state_type pre_recon_vc(const hydro::state_type &U, const hydro::x_type X, safe_real omega, bool angmom) {
+	using simd_double = Vc::Vector<double, Vc::VectorAbi::Avx>;
 	static const cell_geometry<NDIM, INX> geo;
 	auto V = U;
 	const auto dx = X[0][geo.H_DNX] - X[0][0];
-	for (const auto &i : indices) {
-		const auto rho = V[rho_i][i];
-		const auto rhoinv = 1.0 / rho;
+	for (int i = 0; i < geo.H_N3; i+= simd_double::size()) {
+		const simd_double rho_vc = simd_double(V[rho_i].data() + i);
+		const simd_double rhoinv_vc = 1.0 / rho_vc;
 		for (int dim = 0; dim < NDIM; dim++) {
-			auto &s = V[sx_i + dim][i];
-			V[egas_i][i] -= 0.5 * s * s * rhoinv;
-			s *= rhoinv;
+			simd_double egas_vc(V[egas_i].data() + i);
+			simd_double s_vc(V[sx_i + dim].data() + i);
+			egas_vc = egas_vc - (0.5 * s_vc * s_vc * rhoinv_vc);
+			s_vc = s_vc * rhoinv_vc;
+			egas_vc.store(V[egas_i].data() + i);
+			s_vc.store(V[sx_i + dim].data() + i);
 		}
 		for (int si = 0; si < n_species_; si++) {
-			V[spc_i + si][i] *= rhoinv;
+			simd_double tmp(V[spc_i + si].data() + i);
+			tmp = tmp * rhoinv_vc;
+			tmp.store(V[spc_i + si].data() + i);
 		}
-		V[pot_i][i] *= rhoinv;
+		simd_double tmp(V[pot_i].data() + i);
+		tmp = tmp * rhoinv_vc;
+		tmp.store(V[pot_i].data() + i);
 	}
 	return V;
 }
