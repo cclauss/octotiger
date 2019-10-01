@@ -62,7 +62,7 @@ namespace fmm {
         }
 
         template <typename T>
-        void concatenate_vectors(std::vector<std::vector<T>> &input) {
+        void concatenate_vectors(const std::vector<std::vector<T>> &input) {
             size_t result_size = input.size() * input[0].size();
             auto iter = data.begin();
             for (size_t i = 0; i < input.size(); i++) {
