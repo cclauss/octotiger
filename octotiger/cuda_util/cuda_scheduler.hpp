@@ -157,6 +157,15 @@ namespace octotiger { namespace fmm {
         real* device_blocked_monopoles;
     };
 
+    // Contains pointers to device buffers
+    struct hydro_device_enviroment
+    {
+        real *device_D1;
+        real *device_Q1;
+        real *device_U;
+        real *device_X;
+    };
+
     // Scheduler which decides on what device to launch kernel and what memory to use
     class kernel_scheduler
     {
@@ -166,8 +175,12 @@ namespace octotiger { namespace fmm {
         int get_launch_slot();
         // Get references to SoA memory for a slot
         kernel_staging_area get_staging_area(std::size_t slot);
+        // Get references to SoA memory for hydro launches
+        hydro_staging_area get_hydro_staging_area(std::size_t slot);
         // Get references to SoA memory for a slot
         kernel_device_enviroment& get_device_enviroment(std::size_t slot);
+        // Get references to SoA memory for a slot
+        hydro_device_enviroment& get_hydro_device_enviroment(std::size_t slot);
         // Get the CUDA interface for a slot
         // Throws if a CPU slot (-1) is given
         util::cuda_helper& get_launch_interface(std::size_t slot);
@@ -218,12 +231,14 @@ namespace octotiger { namespace fmm {
         std::vector<pinned_vector<real>> local_monopole_slots;
         // Struct container pointers to all CUDA device buffers per stream
         std::vector<kernel_device_enviroment> kernel_device_enviroments;
+        // Struct container pointers to all CUDA device buffers per stream for the hydro kernels
+        std::vector<hydro_device_enviroment> hydro_device_enviroments;
 
         // Hydro
-        hydro_tmp_t<double> D1_SoA;
-        std::vector<hydro_tmp_t<double>> Q1_SoA;
-        hydro_input_t<double> U_SoA;
-        hydro_input_t<double> X_SoA;
+        std::vector<hydro_tmp_t<double>> D1_SoA;
+        std::vector<std::vector<hydro_tmp_t<double>>> Q1_SoA;
+        std::vector<hydro_input_t<double>> U_SoA;
+        std::vector<hydro_input_t<double>> X_SoA;
     };
 }}
 #endif

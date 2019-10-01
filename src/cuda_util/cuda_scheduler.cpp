@@ -214,6 +214,8 @@ namespace octotiger { namespace fmm {
                 // Get one kernel enviroment per stream to handle the data on the gpu
                 kernel_device_enviroments =
                     std::vector<kernel_device_enviroment>(number_slots);
+                hydro_device_enviroments =
+                    std::vector<hydro_device_enviroment>(number_slots);
                 std::size_t cur_interface = 0;
                 // Todo: Remove slots
                 std::size_t cur_slot = 0;
@@ -314,6 +316,16 @@ namespace octotiger { namespace fmm {
     {
         return kernel_staging_area(local_monopole_slots[slot],
             local_expansions_slots[slot], center_of_masses_slots[slot]);
+    }
+    hydro_staging_area kernel_scheduler::get_hydro_staging_area(std::size_t slot)
+    {
+        return hydro_staging_area(D1_SoA[slot], Q1_SoA[slot], U_SoA[slot], X_SoA[slot]);
+    }
+
+    hydro_device_enviroment& kernel_scheduler::get_hydro_device_enviroment(
+        std::size_t slot)
+    {
+        return hydro_device_enviroments[slot];
     }
 
     kernel_device_enviroment& kernel_scheduler::get_device_enviroment(
