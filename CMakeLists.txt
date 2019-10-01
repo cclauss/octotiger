@@ -319,7 +319,7 @@ if(OCTOTIGER_WITH_Vc)
     OCTOTIGER_HAVE_VC
     # Need serialization support from HPX
     # This just spits out lots of warnings
-    # HPX_HAVE_DATAPAR HPX_HAVE_DATAPAR_VC 
+     HPX_HAVE_DATAPAR HPX_HAVE_DATAPAR_VC 
   )
 endif()
 
