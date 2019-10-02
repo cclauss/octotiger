@@ -6,8 +6,8 @@
 #include <octotiger/unitiger/hydro_impl/hydro_cuda/hydro_cuda_kernels.hpp>
 #include <octotiger/common_kernel/struct_of_array_data.hpp>
 
-//#ifdef OCTOTIGER_WITH_CUDA
 void dummy(void) {
+#ifdef OCTOTIGER_HAVE_CUDA
 
     octotiger::fmm::kernel_scheduler::scheduler().init();
 	// Get Slot
@@ -24,12 +24,11 @@ void dummy(void) {
 		auto env =
 			octotiger::fmm::kernel_scheduler::scheduler().get_hydro_device_enviroment(slot);
 		// Launch dummy kernel
-		/*void* args[] = {&(env.device_D1),
+        double local_omega = 1.1;
+		void* args[] = {&(env.device_D1),
 			&(env.device_Q1),
 			&(env.device_U),
-			&(env.device_X), &local_omega};*/
-        double omega = 1.1;
-		void* args[] = {&omega};
+			&(env.device_X), &local_omega};
 
 		dim3 const grid_spec(1, 1, 1);
 		dim3 const threads_per_block(1, 12, 12);
@@ -41,5 +40,6 @@ void dummy(void) {
 		fut.get();
 		std::cin.get();
 	}
+#endif
 
 }
