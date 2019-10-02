@@ -22,6 +22,9 @@ using std::launch;
 #include "octotiger/unitiger/cell_geometry.hpp"
 #include "octotiger/unitiger/util.hpp"
 
+#include <octotiger/cuda_util/cuda_helper.hpp>
+#include <octotiger/cuda_util/cuda_scheduler.hpp>
+
 namespace hydro {
 
 using x_type = std::vector<std::vector<safe_real>>;
@@ -85,7 +88,13 @@ private:
 	std::vector<bc_type> bc_;
 }
 ;
-void dummy(void);
+#ifdef OCTOTIGER_HAVE_CUDA
+void reconstruct_kernel_interface(
+	octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &D1,
+	std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>>> &Q,
+	octotiger::fmm::struct_of_array_data<std::array<safe_real,27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &U,
+	octotiger::fmm::struct_of_array_data<std::array<safe_real, 3>, safe_real, 3, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &X);
+#endif
 
 #include <octotiger/unitiger/hydro_impl/hydro.hpp>
 

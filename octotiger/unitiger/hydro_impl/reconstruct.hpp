@@ -21,19 +21,25 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct_cuda(hydro
 	static thread_local auto D1 = std::vector<std::array<safe_real, geo::NDIR / 2>>(geo::H_N3);
 	static thread_local auto Q = std::vector < std::vector<std::array<safe_real, geo::NDIR>> > (nf_, std::vector<std::array<safe_real, geo::NDIR>>(geo::H_N3));
 
-	static thread_local octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19>
-	D1_SoA;
-	static thread_local std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19>> Q_SoA(nf_);
+	if constexpr (geo::NDIR == 27) {
+		static thread_local octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>
+		D1_SoA;
+		static thread_local std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>> Q_SoA(nf_);
 
-octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19>
-	U_SoA;
-	U_SoA.concatenate_vectors(U_);
-octotiger::fmm::struct_of_array_data<std::array<safe_real, NDIM>, safe_real, NDIM, geo::H_N3, 19>
-	X_SoA;
-	X_SoA.concatenate_vectors(X);
+		octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>
+			U_SoA;
+			U_SoA.concatenate_vectors(U_);
+		octotiger::fmm::struct_of_array_data<std::array<safe_real, NDIM>, safe_real, NDIM, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>
+			X_SoA;
+			X_SoA.concatenate_vectors(X);
 
-	dummy();
+#ifdef OCTOTIGER_HAVE_CUDA
+		reconstruct_kernel_interface(D1_SoA, Q_SoA, U_SoA, X_SoA);
+#endif
+	} else {
+		std::cerr << "CUDA is currently only supported for 3D problems" << std::endl;
 
+	}
 	return Q;
 }
 //#endif

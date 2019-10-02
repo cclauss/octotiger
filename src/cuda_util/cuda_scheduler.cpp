@@ -274,6 +274,37 @@ namespace octotiger { namespace fmm {
                         ++cur_interface;
                     }
                 }
+                // Allocate hydro buffers on the gpus - once per stream
+                local_stream_id = 0;
+                for (hydro_device_enviroment& env : hydro_device_enviroments)
+                {
+                    std::size_t const worker_gpu_id =
+                        (worker_stream_id + local_stream_id) / streams_per_gpu;
+
+                    // Allocate memory on device
+                    util::cuda_helper::cuda_error(
+                        cudaMalloc(reinterpret_cast<void**>(&(env.device_D1)),
+                            d1_size));
+                    util::cuda_helper::cuda_error(
+                        cudaMalloc(reinterpret_cast<void**>(&(env.device_Q1)),
+                            q_size));
+                    util::cuda_helper::cuda_error(
+                        cudaMalloc(reinterpret_cast<void**>(&(env.device_U)),
+                            u_size));
+                    util::cuda_helper::cuda_error(
+                        cudaMalloc(reinterpret_cast<void**>(&(env.device_X)),
+                            x_size));
+
+                    // Change stream interface if necessary
+                    ++local_stream_id;
+                    ++cur_slot;
+                    if (cur_slot >= slots_per_cuda_stream)
+                    {
+                        //util::cuda_helper::cuda_error(cudaThreadSynchronize());
+                        cur_slot = 0;
+                        ++cur_interface;
+                    }
+                }
                 // continue when all cuda things are handled
                 util::cuda_helper::cuda_error(cudaThreadSynchronize());
             }

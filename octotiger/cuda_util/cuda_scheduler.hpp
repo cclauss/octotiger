@@ -38,10 +38,16 @@ namespace octotiger { namespace fmm {
         4 * P2P_PADDED_STENCIL_SIZE * sizeof(real);
     constexpr std::size_t full_stencil_size = FULL_STENCIL_SIZE * sizeof(real);
 
+
     // TODO exhange with template parameters
     constexpr std::size_t NDIR = 27;
     constexpr std::size_t NF = 15;
     constexpr std::size_t H_N3 = 2744;
+
+    constexpr std::size_t d1_size = H_N3 * NDIR * sizeof(real);
+    constexpr std::size_t q_size = NF * H_N3 * NDIR * sizeof(real);
+    constexpr std::size_t u_size = H_N3 * NDIR * sizeof(real);
+    constexpr std::size_t x_size = H_N3 * NDIM * sizeof(real);
 
     // Custom allocator for host-side CUDA vectors
     template <class T>
@@ -86,7 +92,7 @@ namespace octotiger { namespace fmm {
     template <typename T>
     using hydro_tmp_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIR>, T, NDIR, H_N3, 19>;
     template <typename T>
-    using hydro_input_t = octotiger::fmm::struct_of_array_data<std::array<T, NF>, T, NF, H_N3, 19>;
+    using hydro_input_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIR>, T, NDIR, H_N3, 19>;
     template <typename T>
     using hydro_loc_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIM>, T, NDIM, H_N3, 19>;
 

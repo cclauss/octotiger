@@ -6,8 +6,12 @@
 #include <octotiger/unitiger/hydro_impl/hydro_cuda/hydro_cuda_kernels.hpp>
 #include <octotiger/common_kernel/struct_of_array_data.hpp>
 
-void dummy(void) {
 #ifdef OCTOTIGER_HAVE_CUDA
+void reconstruct_kernel_interface(
+	octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &D1,
+	std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>>> &Q,
+	octotiger::fmm::struct_of_array_data<std::array<safe_real,27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &U,
+	octotiger::fmm::struct_of_array_data<std::array<safe_real, 3>, safe_real, 3, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &X) {
 
     octotiger::fmm::kernel_scheduler::scheduler().init();
 	// Get Slot
@@ -23,7 +27,23 @@ void dummy(void) {
 		// Get kernel enviroment
 		auto env =
 			octotiger::fmm::kernel_scheduler::scheduler().get_hydro_device_enviroment(slot);
+		// Move all Arrays
+		// Move Arrays back
 		// Launch dummy kernel
+		gpu_interface.copy_async(env.device_D1,
+			D1.get_pod(),
+			octotiger::fmm::d1_size, cudaMemcpyHostToDevice);
+		for (size_t i = 0; i < 15; i++) {
+			gpu_interface.copy_async(env.device_Q1 + octotiger::fmm::q_size / (15 * sizeof(safe_real)) * i,
+				(Q[i]).get_pod(),
+				octotiger::fmm::q_size/15, cudaMemcpyHostToDevice);
+		}
+		gpu_interface.copy_async(env.device_U,
+			U.get_pod(),
+			octotiger::fmm::u_size, cudaMemcpyHostToDevice);
+		gpu_interface.copy_async(env.device_X,
+			X.get_pod(),
+			octotiger::fmm::x_size, cudaMemcpyHostToDevice);
         double local_omega = 1.1;
 		void* args[] = {&(env.device_D1),
 			&(env.device_Q1),
@@ -36,10 +56,23 @@ void dummy(void) {
 		gpu_interface.execute(
 			reinterpret_cast<void*>(&kernel_reconstruct),
 			grid_spec, threads_per_block, args, 0);
+
+		gpu_interface.copy_async(
+			D1.get_pod(),env.device_D1,
+			octotiger::fmm::d1_size, cudaMemcpyDeviceToHost);
+		for (size_t i = 0; i < 15; i++) {
+			gpu_interface.copy_async(
+				(Q[i]).get_pod(),env.device_Q1 + octotiger::fmm::q_size / (15 * sizeof(safe_real)) * i,
+				octotiger::fmm::q_size/15, cudaMemcpyDeviceToHost);
+		}
+		gpu_interface.copy_async(
+			U.get_pod(),env.device_U,
+			octotiger::fmm::u_size, cudaMemcpyDeviceToHost);
+		gpu_interface.copy_async(
+			X.get_pod(),env.device_X,
+			octotiger::fmm::x_size, cudaMemcpyDeviceToHost);
 		auto fut = gpu_interface.get_future();
 		fut.get();
-		std::cin.get();
 	}
-#endif
-
 }
+#endif
