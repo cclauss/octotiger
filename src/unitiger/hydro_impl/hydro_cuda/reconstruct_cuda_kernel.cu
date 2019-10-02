@@ -72,6 +72,18 @@ __global__ void kernel_reconstruct(double *q, double *D1_SoA, double *u, double 
         q[d * H_N3 + i] += (1.0 / 6.0) * (D1_SoA[d * H_N3 + i] - D1_SoA[d * H_N3 + i + di]);
     }
 
+/*     for (int gi = 0; gi < geo::group_count(); gi++) {
+        safe_real sum = 0.0;
+        for (int n = 0; n < geo::group_size(gi); n++) {
+            const auto pair = geo::group_pair(gi, n);
+            sum += q[pair.second][i + pair.first];
+        }
+        sum /= safe_real(geo::group_size(gi));
+        for (int n = 0; n < geo::group_size(gi); n++) {
+            const auto pair = geo::group_pair(gi, n);
+            q[pair.second][i + pair.first] = sum;
+        }
+    } */
 
     return;
 }

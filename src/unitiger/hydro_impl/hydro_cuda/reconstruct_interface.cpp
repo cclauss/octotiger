@@ -16,7 +16,6 @@ void reconstruct_kernel_interface(
     octotiger::fmm::kernel_scheduler::scheduler().init();
 	// Get Slot
     int slot = octotiger::fmm::kernel_scheduler::scheduler().get_launch_slot();
-		std::cout << "klajsdfhl";
 	if (slot == -1) {
 	} else {
 		// Get interface

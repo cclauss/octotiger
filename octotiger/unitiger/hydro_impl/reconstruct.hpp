@@ -42,6 +42,97 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct_cuda(hydro
 #endif
 	return Q;
 }
+
+const std::vector<bool> alltrue = {true, true, true, true, true, true, true, true, true, true, true, true, true, true, true};
+const std::vector<bool> allfalse = {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
+
+template<int NDIM, int INX>
+void hydro_computer<NDIM, INX>::reconstruct_ppm(std::vector<std::vector<std::vector<safe_real>>> &Q_SoA,
+ hydro::state_type &U_SoA, const hydro::x_type &X, safe_real omega, int face_offset, int faces, const std::vector<bool> &smooth) {
+
+	static thread_local auto D1_SoA = std::vector < std::vector < safe_real >> (geo::NDIR, std::vector < safe_real > (geo::H_N3));
+	static constexpr auto dir = geo::direction();
+
+	for (int f = face_offset; f < faces; f++) {
+		for (int j = 0; j < geo::H_NX_XM2; j++) {
+			for (int k = 0; k < geo::H_NX_YM2; k++) {
+				for (int l = 0; l < geo::H_NX_ZM2; l++) {
+					const int i = geo::to_index(j + 1, k + 1, l + 1);
+					for (int d = 0; d < geo::NDIR; d++) {
+						const auto di = dir[d];
+						D1_SoA[d][i] = minmod_theta(U_SoA[f][i + di] - U_SoA[f][i], U_SoA[f][i] - U_SoA[f][i - di], 2.0);
+					}
+				}
+			}
+		}
+
+		for (int d = 0; d < geo::NDIR; d++) {
+			const auto di = dir[d];
+			for (int j = 0; j < geo::H_NX_XM2; j++) {
+				for (int k = 0; k < geo::H_NX_YM2; k++) {
+					for (int l = 0; l < geo::H_NX_ZM2; l++) {
+						const int i = geo::to_index(j + 1, k + 1, l + 1);
+						Q_SoA[f][d][i] = 0.5 * (U_SoA[f][i] + U_SoA[f][i + di]);
+						Q_SoA[f][d][i] += (1.0 / 6.0) * (D1_SoA[d][i] - D1_SoA[d][i + di]);
+					}
+				}
+			}
+		}
+
+#ifndef DISABLE_VERTEX_AVG
+		for (int j = 0; j < geo::H_NX_XM2; j++) {
+			for (int k = 0; k < geo::H_NX_YM2; k++) {
+				for (int l = 0; l < geo::H_NX_ZM2; l++) {
+					const int i = geo::to_index(j + 1, k + 1, l + 1);
+					for (int gi = 0; gi < geo::group_count(); gi++) {
+						safe_real sum = 0.0;
+						for (int n = 0; n < geo::group_size(gi); n++) {
+							const auto pair = geo::group_pair(gi, n);
+							sum += Q_SoA[f][pair.second][i + pair.first];
+						}
+						sum /= safe_real(geo::group_size(gi));
+						for (int n = 0; n < geo::group_size(gi); n++) {
+							const auto pair = geo::group_pair(gi, n);
+							Q_SoA[f][pair.second][i + pair.first] = sum;
+						}
+					}
+				}
+			}
+		}
+		for (int d = 0; d < geo::NDIR; d++) {
+			if (d != geo::NDIR / 2) {
+				const auto di = dir[d];
+				for (int j = 0; j < geo::H_NX_XM2; j++) {
+					for (int k = 0; k < geo::H_NX_YM2; k++) {
+						for (int l = 0; l < geo::H_NX_ZM2; l++) {
+							const int i = geo::to_index(j + 1, k + 1, l + 1);
+							const auto M = std::max(U_SoA[f][i], U_SoA[f][i + di]);
+							const auto m = std::min(U_SoA[f][i], U_SoA[f][i + di]);
+							Q_SoA[f][d][i] = std::max(Q_SoA[f][d][i], m);
+							Q_SoA[f][d][i] = std::min(Q_SoA[f][d][i], M);
+						}
+					}
+				}
+			}
+		}
+#endif
+
+		if (!smooth[f]) {
+			for (int d = 0; d < geo::NDIR / 2; d++) {
+				for (int j = 0; j < geo::H_NX_XM4; j++) {
+					for (int k = 0; k < geo::H_NX_YM4; k++) {
+						for (int l = 0; l < geo::H_NX_ZM4; l++) {
+							const int i = geo::to_index(j + 2, k + 2, l + 2);
+							auto &qp = Q_SoA[f][geo::flip(d)][i];
+							auto &qm = Q_SoA[f][d][i];
+							limit_slope(qm, U_SoA[f][i], qp);
+						}
+					}
+				}
+			}
+		}
+	}
+}
 //#endif
 
 template<int NDIM, int INX>
@@ -113,104 +204,17 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::sta
 		}
 	};
 
-	const auto reconstruct_ppm = [this](std::vector<std::vector<safe_real>> &q, const std::vector<safe_real> &u, bool smooth) {
-
-		for (int j = 0; j < geo::H_NX_XM2; j++) {
-			for (int k = 0; k < geo::H_NX_YM2; k++) {
-				for (int l = 0; l < geo::H_NX_ZM2; l++) {
-					const int i = geo::to_index(j + 1, k + 1, l + 1);
-					for (int d = 0; d < geo::NDIR; d++) {
-						const auto di = dir[d];
-						D1_SoA[d][i] = minmod_theta(u[i + di] - u[i], u[i] - u[i - di], 2.0);
-					}
-				}
-			}
-		}
-
-		for (int d = 0; d < geo::NDIR; d++) {
-			const auto di = dir[d];
-			for (int j = 0; j < geo::H_NX_XM2; j++) {
-				for (int k = 0; k < geo::H_NX_YM2; k++) {
-					for (int l = 0; l < geo::H_NX_ZM2; l++) {
-						const int i = geo::to_index(j + 1, k + 1, l + 1);
-						q[d][i] = 0.5 * (u[i] + u[i + di]);
-						q[d][i] += (1.0 / 6.0) * (D1_SoA[d][i] - D1_SoA[d][i + di]);
-					}
-				}
-			}
-		}
-
-#ifndef DISABLE_VERTEX_AVG
-		for (int j = 0; j < geo::H_NX_XM2; j++) {
-			for (int k = 0; k < geo::H_NX_YM2; k++) {
-				for (int l = 0; l < geo::H_NX_ZM2; l++) {
-					const int i = geo::to_index(j + 1, k + 1, l + 1);
-					for (int gi = 0; gi < geo::group_count(); gi++) {
-						safe_real sum = 0.0;
-						for (int n = 0; n < geo::group_size(gi); n++) {
-							const auto pair = geo::group_pair(gi, n);
-							sum += q[pair.second][i + pair.first];
-						}
-						sum /= safe_real(geo::group_size(gi));
-						for (int n = 0; n < geo::group_size(gi); n++) {
-							const auto pair = geo::group_pair(gi, n);
-							q[pair.second][i + pair.first] = sum;
-						}
-					}
-				}
-			}
-		}
-		for (int d = 0; d < geo::NDIR; d++) {
-			if (d != geo::NDIR / 2) {
-				const auto di = dir[d];
-				for (int j = 0; j < geo::H_NX_XM2; j++) {
-					for (int k = 0; k < geo::H_NX_YM2; k++) {
-						for (int l = 0; l < geo::H_NX_ZM2; l++) {
-							const int i = geo::to_index(j + 1, k + 1, l + 1);
-							const auto M = std::max(u[i], u[i + di]);
-							const auto m = std::min(u[i], u[i + di]);
-							q[d][i] = std::max(q[d][i], m);
-							q[d][i] = std::min(q[d][i], M);
-						}
-					}
-				}
-			}
-		}
-#endif
-
-		if (!smooth) {
-			for (int d = 0; d < geo::NDIR / 2; d++) {
-				for (int j = 0; j < geo::H_NX_XM4; j++) {
-					for (int k = 0; k < geo::H_NX_YM4; k++) {
-						for (int l = 0; l < geo::H_NX_ZM4; l++) {
-							const int i = geo::to_index(j + 2, k + 2, l + 2);
-							auto &qp = q[geo::flip(d)][i];
-							auto &qm = q[d][i];
-							limit_slope(qm, u[i], qp);
-						}
-					}
-				}
-			}
-		}
-	};
-
 	if (angmom_count_ == 0 || NDIM == 1) {
-		for (int f = 0; f < nf_; f++) {
-			reconstruct_ppm(Q_SoA[f], U[f], smooth_field_[f]);
-		}
+		reconstruct_ppm(Q_SoA, U, X, omega, 0, nf_, smooth_field_);
 
 	} else {
-		for (int f = 0; f < angmom_index_; f++) {
-			reconstruct_ppm(Q_SoA[f], U[f], smooth_field_[f]);
-		}
+		reconstruct_ppm(Q_SoA, U, X, omega, 0, angmom_index_, smooth_field_);
 
 		int sx_i = angmom_index_;
 		int zx_i = sx_i + NDIM;
 
 		for (int angmom_pair = 0; angmom_pair < angmom_count_; angmom_pair++) {
-			for (int f = sx_i; f < sx_i + NDIM; f++) {
-				reconstruct_ppm(Q_SoA[f], U[f], true);
-			}
+			reconstruct_ppm(Q_SoA, U, X, omega, sx_i, sx_i + NDIM, alltrue);
 
 			SoA2AoS(rho_i, rho_i + 1);
 			SoA2AoS(sx_i, sx_i + NDIM);
@@ -271,16 +275,11 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::sta
 
 			AoS2SoA(sx_i, zx_i + geo::NANGMOM);
 
-			for (int f = zx_i; f < zx_i + geo::NANGMOM; f++) {
-				reconstruct_ppm(Q_SoA[f], U[f], false);
-			}
+			reconstruct_ppm(Q_SoA, U, X, omega, zx_i, zx_i + geo::NANGMOM, allfalse);
 			sx_i += geo::NANGMOM + NDIM;
 			zx_i += geo::NANGMOM + NDIM;
 		}
-		for (int f = angmom_index_ + angmom_count_ * (geo::NANGMOM + NDIM); f < nf_; f++) {
-			reconstruct_ppm(Q_SoA[f], U[f], smooth_field_[f]);
-		}
-
+		reconstruct_ppm(Q_SoA, U, X, omega, angmom_index_ + angmom_count_ * (geo::NANGMOM + NDIM), nf_, smooth_field_);
 	}
 
 	Q_SoA = physics < NDIM > ::template post_recon<INX>(Q_SoA, X, omega, angmom_count_ > 0);
