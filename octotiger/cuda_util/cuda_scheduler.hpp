@@ -87,6 +87,8 @@ namespace octotiger { namespace fmm {
     using hydro_tmp_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIR>, T, NDIR, H_N3, 19>;
     template <typename T>
     using hydro_input_t = octotiger::fmm::struct_of_array_data<std::array<T, NF>, T, NF, H_N3, 19>;
+    template <typename T>
+    using hydro_loc_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIM>, T, NDIM, H_N3, 19>;
 
     // Contains references to all data needed for one Hydro kernel run
     class hydro_staging_area 
@@ -95,7 +97,7 @@ namespace octotiger { namespace fmm {
         hydro_staging_area(hydro_tmp_t<double> &D1,
             std::vector<hydro_tmp_t<double>> &Q1,
             hydro_input_t<double> &U,
-            hydro_input_t<double> &X)
+            hydro_loc_t<double> &X)
             : D1_SoA(D1)
             , Q1_SoA(Q1)
             , U_SoA(U)
@@ -105,7 +107,7 @@ namespace octotiger { namespace fmm {
             hydro_tmp_t<double> &D1_SoA;
             std::vector<hydro_tmp_t<double>> &Q1_SoA;
             hydro_input_t<double> &U_SoA;
-            hydro_input_t<double> &X_SoA;
+            hydro_loc_t<double> &X_SoA;
     };
 
     // Contains references to all data needed for one FMM interaction kernel run
@@ -238,7 +240,7 @@ namespace octotiger { namespace fmm {
         std::vector<hydro_tmp_t<double>> D1_SoA;
         std::vector<std::vector<hydro_tmp_t<double>>> Q1_SoA;
         std::vector<hydro_input_t<double>> U_SoA;
-        std::vector<hydro_input_t<double>> X_SoA;
+        std::vector<hydro_loc_t<double>> X_SoA;
     };
 }}
 #endif

@@ -9,6 +9,7 @@
 
 #include <octotiger/cuda_util/cuda_helper.hpp>
 #include <octotiger/cuda_util/cuda_scheduler.hpp>
+#include <octotiger/unitiger/hydro_impl/hydro_cuda/hydro_cuda_kernels.hpp>
 #include <octotiger/common_kernel/struct_of_array_data.hpp>
 
 //#ifdef OCTOTIGER_WITH_CUDA
@@ -31,18 +32,7 @@ octotiger::fmm::struct_of_array_data<std::array<safe_real, NDIM>, safe_real, NDI
 	X_SoA;
 	X_SoA.concatenate_vectors(X);
 
-    octotiger::fmm::kernel_scheduler::scheduler().init();
-	// Get Slot
-    int slot = octotiger::fmm::kernel_scheduler::scheduler().get_launch_slot();
-	if (slot == -1) {
-		return Q;
-	} else {
-		// Get staging area
-		auto staging_area =
-			octotiger::fmm::kernel_scheduler::scheduler().get_staging_area(slot);
-		// Get kernel enviroment
-		// Launch dummy kernel
-	}
+	dummy();
 
 	return Q;
 }
@@ -76,7 +66,7 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::sta
 			}
 		}
 	};
-
+	reconstruct_cuda(U_, X, omega);
 	static constexpr auto xloc = geo::xloc();
 	static constexpr auto kdelta = geo::kronecker_delta();
 	static constexpr auto vw = geo::volume_weight();

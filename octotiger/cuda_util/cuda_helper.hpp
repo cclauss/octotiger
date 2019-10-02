@@ -60,9 +60,12 @@ namespace octotiger { namespace util {
         template <typename... Args>
         void execute(Args&&... args)
         {
+            std::cerr << "setting" << std::endl;
             // make sure we run on the correct device
             cuda_error(cudaSetDevice(target_.native_handle().get_device()));
+            std::cerr << "executing" << std::endl;
             cuda_error(cudaLaunchKernel(std::forward<Args>(args)..., stream_));
+            std::cerr << "done executing" << std::endl;
         }
 
         template <typename... Args>
@@ -103,7 +106,7 @@ namespace octotiger { namespace util {
                 std::stringstream temp;
                 temp << "CUDA function returned error code "
                      << cudaGetErrorString(err);
-                throw std::runtime_error(temp.str());
+                std::cout << temp.str() << std::endl;
             }
         }
 

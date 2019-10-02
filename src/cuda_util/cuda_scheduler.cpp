@@ -211,6 +211,19 @@ namespace octotiger { namespace fmm {
                     mons = std::vector<real, cuda_pinned_allocator<real>>(ENTRIES);
                 }
 
+                // initialize hydro staging area
+                D1_SoA = std::vector<hydro_tmp_t<double>>(number_slots);
+                // this needs some extra love
+                Q1_SoA = std::vector<std::vector<hydro_tmp_t<double>>>(number_slots);
+                for (auto& qs : Q1_SoA)
+                {
+                    qs = std::vector<hydro_tmp_t<double>>(NF);
+                }
+                U_SoA = std::vector<hydro_input_t<double>>(number_slots);
+                X_SoA = std::vector<hydro_loc_t<double>>(number_slots);
+
+
+
                 // Get one kernel enviroment per stream to handle the data on the gpu
                 kernel_device_enviroments =
                     std::vector<kernel_device_enviroment>(number_slots);

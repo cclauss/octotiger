@@ -211,6 +211,7 @@ add_hpx_library(
    src/test_problems/blast/sedovf_c.cpp
    src/test_problems/sod/exact_sod.cpp
    src/unitiger/hydro_impl/hydro_cuda/reconstruct_cuda_kernel.cu
+   src/unitiger/hydro_impl/hydro_cuda/reconstruct_interface.cpp
   HEADERS
     octotiger/unitiger/hydro.hpp
     octotiger/unitiger/physics.hpp
@@ -357,6 +358,10 @@ if(OCTOTIGER_WITH_CUDA)
   target_compile_definitions(octolib PUBLIC OCTOTIGER_HAVE_CUDA)
   set_property(TARGET octolib PROPERTY CUDA_SEPARABLE_COMPILATION ON)
   set_property(TARGET octolib PROPERTY INTERFACE_COMPILE_OPTIONS "${MY_CUDA_FLAGS}")
+
+  target_compile_definitions(hydrolib PUBLIC OCTOTIGER_HAVE_CUDA)
+  set_property(TARGET hydrolib PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+  set_property(TARGET hydrolib PROPERTY INTERFACE_COMPILE_OPTIONS "${MY_CUDA_FLAGS}")
 endif()
 
 # Handle other options

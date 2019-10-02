@@ -85,6 +85,7 @@ private:
 	std::vector<bc_type> bc_;
 }
 ;
+void dummy(void);
 
 #include <octotiger/unitiger/hydro_impl/hydro.hpp>
 
