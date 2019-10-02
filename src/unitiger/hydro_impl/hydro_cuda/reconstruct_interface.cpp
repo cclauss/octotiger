@@ -16,6 +16,7 @@ void reconstruct_kernel_interface(
     octotiger::fmm::kernel_scheduler::scheduler().init();
 	// Get Slot
     int slot = octotiger::fmm::kernel_scheduler::scheduler().get_launch_slot();
+		std::cout << "klajsdfhl";
 	if (slot == -1) {
 	} else {
 		// Get interface
@@ -45,13 +46,14 @@ void reconstruct_kernel_interface(
 			X.get_pod(),
 			octotiger::fmm::x_size, cudaMemcpyHostToDevice);
         double local_omega = 1.1;
+		int offset = 0;
 		void* args[] = {&(env.device_D1),
 			&(env.device_Q1),
 			&(env.device_U),
-			&(env.device_X), &local_omega};
+			&(env.device_X), &local_omega, &offset};
 
-		dim3 const grid_spec(1, 1, 1);
-		dim3 const threads_per_block(1, 12, 12);
+		dim3 const grid_spec(1, 4, 14);
+		dim3 const threads_per_block(1, 14, 14);
 		std::cout << "Launching in slot " << slot << "..." << std::endl;
 		gpu_interface.execute(
 			reinterpret_cast<void*>(&kernel_reconstruct),

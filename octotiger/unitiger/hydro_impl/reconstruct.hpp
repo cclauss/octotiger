@@ -18,7 +18,7 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct_cuda(hydro
 
 //	static thread_local octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19>
 //		D1_SoA;
-	static thread_local auto D1 = std::vector<std::array<safe_real, geo::NDIR / 2>>(geo::H_N3);
+	static thread_local auto D1 = std::vector<std::array<safe_real, geo::NDIR>>(geo::H_N3);
 	static thread_local auto Q = std::vector < std::vector<std::array<safe_real, geo::NDIR>> > (nf_, std::vector<std::array<safe_real, geo::NDIR>>(geo::H_N3));
 
 #ifdef OCTOTIGER_HAVE_CUDA
@@ -119,7 +119,7 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::sta
 			for (int k = 0; k < geo::H_NX_YM2; k++) {
 				for (int l = 0; l < geo::H_NX_ZM2; l++) {
 					const int i = geo::to_index(j + 1, k + 1, l + 1);
-					for (int d = 0; d < geo::NDIR / 2; d++) {
+					for (int d = 0; d < geo::NDIR; d++) {
 						const auto di = dir[d];
 						D1_SoA[d][i] = minmod_theta(u[i + di] - u[i], u[i] - u[i - di], 2.0);
 					}
@@ -127,7 +127,7 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::sta
 			}
 		}
 
-		for (int d = 0; d < geo::NDIR / 2; d++) {
+		for (int d = 0; d < geo::NDIR; d++) {
 			const auto di = dir[d];
 			for (int j = 0; j < geo::H_NX_XM2; j++) {
 				for (int k = 0; k < geo::H_NX_YM2; k++) {
@@ -135,7 +135,6 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct(hydro::sta
 						const int i = geo::to_index(j + 1, k + 1, l + 1);
 						q[d][i] = 0.5 * (u[i] + u[i + di]);
 						q[d][i] += (1.0 / 6.0) * (D1_SoA[d][i] - D1_SoA[d][i + di]);
-						q[geo::flip(d)][i + di] = q[d][i];
 					}
 				}
 			}
