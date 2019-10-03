@@ -48,7 +48,7 @@ __device__ inline double minmod_theta(double a, double b, double c) {
 
 constexpr size_t H_N3 = 14 * 14 * 14;
 
-__global__ void kernel_reconstruct(double *q, double *D1_SoA, double *u, double *x_SoA, double omega, int face_offset) {
+__global__ void kernel_ppm1(double *D1_SoA, double *u, int face_offset) {
     bool first_thread = (blockIdx.x == 0) && (threadIdx.y == 0) && (threadIdx.z == 0);
     int id = (blockIdx.x * 14 *14) + (threadIdx.y * 14) + (threadIdx.z);
     
@@ -65,27 +65,27 @@ __global__ void kernel_reconstruct(double *q, double *D1_SoA, double *u, double 
         const auto di = dir[d];
         D1_SoA[d * H_N3 + i] = minmod_theta(u[i + di] - u[i], u[i] - u[i - di], 2.0);
     }
+    return;
+}
+
+__global__ void kernel_ppm2(double *q, double *D1_SoA, double *u, int face_offset) {
+    bool first_thread = (blockIdx.x == 0) && (threadIdx.y == 0) && (threadIdx.z == 0);
+    int id = (blockIdx.x * 14 *14) + (threadIdx.y * 14) + (threadIdx.z);
+    
+    const int z = threadIdx.z;
+    const int y = threadIdx.y;
+    const int x = blockIdx.z;
+    if (x >= 14 || y >= 14 || z >= 14)
+        return;
+    const int f = blockIdx.y + face_offset;
+    const int startindex = f * H_N3;
+    const int i = startindex + to_index(x + 1, y + 1, z + 1);
 
     for (int d = 0; d < NDIR; d++) {
         const auto di = dir[d];
         q[d * H_N3 + i] = 0.5 * (u[i] + u[i + di]);
         q[d * H_N3 + i] += (1.0 / 6.0) * (D1_SoA[d * H_N3 + i] - D1_SoA[d * H_N3 + i + di]);
     }
-
-/*     for (int gi = 0; gi < geo::group_count(); gi++) {
-        safe_real sum = 0.0;
-        for (int n = 0; n < geo::group_size(gi); n++) {
-            const auto pair = geo::group_pair(gi, n);
-            sum += q[pair.second][i + pair.first];
-        }
-        sum /= safe_real(geo::group_size(gi));
-        for (int n = 0; n < geo::group_size(gi); n++) {
-            const auto pair = geo::group_pair(gi, n);
-            q[pair.second][i + pair.first] = sum;
-        }
-    } */
-
-    return;
 }
 
 #endif 
