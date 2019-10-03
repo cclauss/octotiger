@@ -34,7 +34,7 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct_cuda(hydro
 			X_SoA;
 			X_SoA.concatenate_vectors(X);
 
-		reconstruct_kernel_interface(D1_SoA, Q_SoA, U_SoA, X_SoA);
+		//reconstruct_kernel_interface(D1_SoA, Q_SoA, U_SoA, X_SoA);
 	} else {
 		std::cerr << "CUDA is currently only supported for 3D problems" << std::endl;
 
@@ -49,6 +49,60 @@ const std::vector<bool> allfalse = {false, false, false, false, false, false, fa
 template<int NDIM, int INX>
 void hydro_computer<NDIM, INX>::reconstruct_ppm(std::vector<std::vector<std::vector<safe_real>>> &Q_SoA,
  hydro::state_type &U_SoA, const hydro::x_type &X, safe_real omega, int face_offset, int faces, const std::vector<bool> &smooth) {
+	if constexpr (geo::NDIR != 27) {
+		reconstruct_ppm_cpu(Q_SoA, U_SoA, omega, face_offset, faces, smooth);
+	} else {
+		octotiger::fmm::kernel_scheduler::scheduler().init();
+		// Get Slot
+		int slot = octotiger::fmm::kernel_scheduler::scheduler().get_launch_slot();
+		if (slot == -1) {
+			reconstruct_ppm_cpu(Q_SoA, U_SoA, omega, face_offset, faces, smooth);
+		} else {
+			// Get interface
+			octotiger::util::cuda_helper& gpu_interface =
+				octotiger::fmm::kernel_scheduler::scheduler().get_launch_interface(slot);
+
+			// Get staging area
+			auto staging_area =
+				octotiger::fmm::kernel_scheduler::scheduler().get_hydro_staging_area(slot);
+			auto env =
+				octotiger::fmm::kernel_scheduler::scheduler().get_hydro_device_enviroment(slot);
+
+			octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &D1_SoA =
+				staging_area.D1_SoA;
+
+			octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>
+				&U_SoA2 = staging_area.U_SoA;
+			U_SoA2.concatenate_vectors(U_SoA);
+
+			std::vector<octotiger::fmm::struct_of_array_data<std::vector<safe_real>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>>
+				&Q_SoA2 = staging_area.Q1_SoA;
+			for (auto f = 0; f < nf_; f++) {
+			Q_SoA2[f].concatenate_vectors(Q_SoA[f]);
+			}
+
+			reconstruct_kernel_interface(D1_SoA, Q_SoA2, U_SoA2);
+
+			for (auto f = 0; f < nf_; f++) {
+				for (auto component = 0; component < geo::NDIR; component++) {
+					Q_SoA2[f].copy_component(component, Q_SoA[f][component]);
+				}
+			}
+
+			reconstruct_ppm_cpu(Q_SoA, U_SoA, omega, face_offset, faces, smooth);
+
+		// TODO Add loops that are not yet implemented
+		}
+
+
+	}
+
+}
+
+
+template<int NDIM, int INX>
+void hydro_computer<NDIM, INX>::reconstruct_ppm_cpu(std::vector<std::vector<std::vector<safe_real>>> &Q_SoA,
+ hydro::state_type &U_SoA, safe_real omega, int face_offset, int faces, const std::vector<bool> &smooth) {
 
 	static thread_local auto D1_SoA = std::vector < std::vector < safe_real >> (geo::NDIR, std::vector < safe_real > (geo::H_N3));
 	static constexpr auto dir = geo::direction();

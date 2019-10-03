@@ -9,6 +9,12 @@
 #ifdef OCTOTIGER_HAVE_CUDA
 void reconstruct_kernel_interface(
 	octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &D1,
+	std::vector<octotiger::fmm::struct_of_array_data<std::vector<safe_real>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>>> &Q,
+	octotiger::fmm::struct_of_array_data<std::array<safe_real,27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &U) {
+
+}
+void reconstruct_kernel_interface_sample(
+	octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &D1,
 	std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>>> &Q,
 	octotiger::fmm::struct_of_array_data<std::array<safe_real,27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &U,
 	octotiger::fmm::struct_of_array_data<std::array<safe_real, 3>, safe_real, 3, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &X) {

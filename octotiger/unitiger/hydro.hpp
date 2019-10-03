@@ -50,6 +50,8 @@ struct hydro_computer: public cell_geometry<NDIM, INX> {
 	const hydro::recon_type<NDIM>& reconstruct_cuda(hydro::state_type &U, const hydro::x_type&, safe_real );
 	void reconstruct_ppm(std::vector<std::vector<std::vector<safe_real>>> &Q_SoA,
 		hydro::state_type &U, const hydro::x_type&, safe_real, int face_offset, int faces, const std::vector<bool> &smooth);
+	void reconstruct_ppm_cpu(std::vector<std::vector<std::vector<safe_real>>> &Q_SoA,
+		hydro::state_type &U, safe_real, int face_offset, int faces, const std::vector<bool> &smooth);
 //#endif
 
 	safe_real flux(const hydro::state_type& U, const hydro::recon_type<NDIM> &Q, hydro::flux_type &F, hydro::x_type &X, safe_real omega);
@@ -91,11 +93,17 @@ private:
 }
 ;
 #ifdef OCTOTIGER_HAVE_CUDA
-void reconstruct_kernel_interface(
+void reconstruct_kernel_interface_sample(
 	octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &D1,
 	std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>>> &Q,
 	octotiger::fmm::struct_of_array_data<std::array<safe_real,27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &U,
 	octotiger::fmm::struct_of_array_data<std::array<safe_real, 3>, safe_real, 3, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &X);
+
+void reconstruct_kernel_interface(
+	octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &D1,
+	std::vector<octotiger::fmm::struct_of_array_data<std::vector<safe_real>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>>> &Q,
+	octotiger::fmm::struct_of_array_data<std::array<safe_real,27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &U
+);
 #endif
 
 #include <octotiger/unitiger/hydro_impl/hydro.hpp>

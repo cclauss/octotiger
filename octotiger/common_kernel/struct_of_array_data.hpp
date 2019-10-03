@@ -67,7 +67,15 @@ namespace fmm {
             auto iter = data.begin();
             for (size_t i = 0; i < input.size(); i++) {
                 iter = std::copy(input[i].begin(), input[i].end(), iter);
+                std::advance(iter, padding);
             }
+        }
+        template <typename T>
+        void copy_component(int start_component,std::vector<T> &target) {
+            auto target_iter = target.begin();
+            auto iter = data.begin();
+            std::advance(iter,start_component * padded_entries_per_component);
+            std::copy(iter, iter + entries, target_iter);
         }
 
         struct_of_array_data(const std::vector<AoS_type>& org)
@@ -92,6 +100,14 @@ namespace fmm {
         struct_of_array_data(const struct_of_array_data&& other) = delete;
 
         struct_of_array_data& operator=(const struct_of_array_data& other) = delete;
+
+        void from_AoS(const std::vector<AoS_type>& org) {
+            for (size_t component = 0; component < num_components; component++) {
+                for (size_t entry = 0; entry < org.size(); entry++) {
+                    data[component * padded_entries_per_component + entry] = org[entry][component];
+                }
+            }
+        }
 
         // write back into non-SoA style array
         void to_non_SoA(std::vector<AoS_type>& org) {

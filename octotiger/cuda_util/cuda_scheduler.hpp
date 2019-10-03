@@ -90,18 +90,20 @@ namespace octotiger { namespace fmm {
     using pinned_vector = std::vector<T, cuda_pinned_allocator<T>>;
 
     template <typename T>
-    using hydro_tmp_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIR>, T, NDIR, H_N3, 19>;
+    using hydro_tmp_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIR>, T, NDIR, H_N3, 19, pinned_vector<double>>;
     template <typename T>
-    using hydro_input_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIR>, T, NDIR, H_N3, 19>;
+    using hydro_q_t = octotiger::fmm::struct_of_array_data<std::vector<T>, T, NDIR, H_N3, 19, pinned_vector<double>>;
     template <typename T>
-    using hydro_loc_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIM>, T, NDIM, H_N3, 19>;
+    using hydro_input_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIR>, T, NDIR, H_N3, 19, pinned_vector<double>>;
+    template <typename T>
+    using hydro_loc_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIM>, T, NDIM, H_N3, 19, pinned_vector<double>>;
 
     // Contains references to all data needed for one Hydro kernel run
     class hydro_staging_area 
     {
         public:
         hydro_staging_area(hydro_tmp_t<double> &D1,
-            std::vector<hydro_tmp_t<double>> &Q1,
+            std::vector<hydro_q_t<double>> &Q1,
             hydro_input_t<double> &U,
             hydro_loc_t<double> &X)
             : D1_SoA(D1)
@@ -111,7 +113,7 @@ namespace octotiger { namespace fmm {
             {}
             // Hydro Buffers
             hydro_tmp_t<double> &D1_SoA;
-            std::vector<hydro_tmp_t<double>> &Q1_SoA;
+            std::vector<hydro_q_t<double>> &Q1_SoA;
             hydro_input_t<double> &U_SoA;
             hydro_loc_t<double> &X_SoA;
     };
@@ -244,7 +246,7 @@ namespace octotiger { namespace fmm {
 
         // Hydro
         std::vector<hydro_tmp_t<double>> D1_SoA;
-        std::vector<std::vector<hydro_tmp_t<double>>> Q1_SoA;
+        std::vector<std::vector<hydro_q_t<double>>> Q1_SoA;
         std::vector<hydro_input_t<double>> U_SoA;
         std::vector<hydro_loc_t<double>> X_SoA;
     };

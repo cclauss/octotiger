@@ -214,10 +214,9 @@ namespace octotiger { namespace fmm {
                 // initialize hydro staging area
                 D1_SoA = std::vector<hydro_tmp_t<double>>(number_slots);
                 // this needs some extra love
-                Q1_SoA = std::vector<std::vector<hydro_tmp_t<double>>>(number_slots);
-                for (auto& qs : Q1_SoA)
-                {
-                    qs = std::vector<hydro_tmp_t<double>>(NF);
+                Q1_SoA = std::vector<std::vector<hydro_q_t<double>>>(number_slots);
+                for (auto& qs : Q1_SoA) {
+                    qs = std::vector<hydro_q_t<double>>(NF);
                 }
                 U_SoA = std::vector<hydro_input_t<double>>(number_slots);
                 X_SoA = std::vector<hydro_loc_t<double>>(number_slots);
