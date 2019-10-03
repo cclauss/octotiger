@@ -66,8 +66,8 @@ namespace fmm {
             size_t result_size = input.size() * input[0].size();
             auto iter = data.begin();
             for (size_t i = 0; i < input.size(); i++) {
-                iter = std::copy(input[i].begin(), input[i].end(), iter);
-                std::advance(iter, padding);
+                std::copy(input[i].begin(), input[i].end(), iter);
+                std::advance(iter, padded_entries_per_component);
             }
         }
         template <typename T>

@@ -212,7 +212,10 @@ namespace octotiger { namespace fmm {
                 }
 
                 // initialize hydro staging area
-                D1_SoA = std::vector<hydro_tmp_t<double>>(number_slots);
+                D1_SoA = std::vector<std::vector<hydro_tmp_t<double>>>(number_slots);
+                for (auto& ds : D1_SoA) {
+                    ds = std::vector<hydro_tmp_t<double>>(NF);
+                }
                 // this needs some extra love
                 Q1_SoA = std::vector<std::vector<hydro_q_t<double>>>(number_slots);
                 for (auto& qs : Q1_SoA) {
@@ -283,7 +286,7 @@ namespace octotiger { namespace fmm {
                     // Allocate memory on device
                     util::cuda_helper::cuda_error(
                         cudaMalloc(reinterpret_cast<void**>(&(env.device_D1)),
-                            d1_size));
+                            d1_size * NF));
                     util::cuda_helper::cuda_error(
                         cudaMalloc(reinterpret_cast<void**>(&(env.device_Q1)),
                             q_size));

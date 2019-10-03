@@ -68,7 +68,7 @@ void hydro_computer<NDIM, INX>::reconstruct_ppm(std::vector<std::vector<std::vec
 			auto env =
 				octotiger::fmm::kernel_scheduler::scheduler().get_hydro_device_enviroment(slot);
 
-			octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &D1_SoA =
+			std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>>> &D1_SoA =
 				staging_area.D1_SoA;
 
 			octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>
@@ -90,7 +90,6 @@ void hydro_computer<NDIM, INX>::reconstruct_ppm(std::vector<std::vector<std::vec
 			}
 
 			reconstruct_ppm_partial(Q_SoA, U_SoA, omega, face_offset, faces, smooth);
-		// TODO Add loops that are not yet implemented
 		}
 
 
@@ -102,8 +101,33 @@ void hydro_computer<NDIM, INX>::reconstruct_ppm_partial(std::vector<std::vector<
  hydro::state_type &U_SoA, safe_real omega, int face_offset, int faces, const std::vector<bool> &smooth) {
 
 	static constexpr auto dir = geo::direction();
+	// static thread_local auto D1_SoA = std::vector < std::vector < safe_real >> (geo::NDIR, std::vector < safe_real > (geo::H_N3));
 
-	for (int f = face_offset; f < faces; f++) {
+ 	for (int f = face_offset; f < faces; f++) {
+		/*for (int j = 0; j < geo::H_NX_XM2; j++) {
+			for (int k = 0; k < geo::H_NX_YM2; k++) {
+				for (int l = 0; l < geo::H_NX_ZM2; l++) {
+					const int i = geo::to_index(j + 1, k + 1, l + 1);
+					for (int d = 0; d < geo::NDIR; d++) {
+						const auto di = dir[d];
+						D1_SoA[d][i] = minmod_theta(U_SoA[f][i + di] - U_SoA[f][i], U_SoA[f][i] - U_SoA[f][i - di], 2.0);
+					}
+				}
+			}
+		}
+
+		for (int d = 0; d < geo::NDIR; d++) {
+			const auto di = dir[d];
+			for (int j = 0; j < geo::H_NX_XM2; j++) {
+			for (int k = 0; k < geo::H_NX_YM2; k++) {
+				for (int l = 0; l < geo::H_NX_ZM2; l++) {
+						const int i = geo::to_index(j + 1, k + 1, l + 1);
+						Q_SoA[f][d][i] = 0.5 * (U_SoA[f][i] + U_SoA[f][i + di]);
+						Q_SoA[f][d][i] += (1.0 / 6.0) * (D1_SoA[d][i] - D1_SoA[d][i + di]);
+					}
+				}
+			}
+		} */
 #ifndef DISABLE_VERTEX_AVG
 		for (int j = 0; j < geo::H_NX_XM2; j++) {
 			for (int k = 0; k < geo::H_NX_YM2; k++) {
@@ -183,8 +207,8 @@ void hydro_computer<NDIM, INX>::reconstruct_ppm_cpu(std::vector<std::vector<std:
 		for (int d = 0; d < geo::NDIR; d++) {
 			const auto di = dir[d];
 			for (int j = 0; j < geo::H_NX_XM2; j++) {
-				for (int k = 0; k < geo::H_NX_YM2; k++) {
-					for (int l = 0; l < geo::H_NX_ZM2; l++) {
+			for (int k = 0; k < geo::H_NX_YM2; k++) {
+				for (int l = 0; l < geo::H_NX_ZM2; l++) {
 						const int i = geo::to_index(j + 1, k + 1, l + 1);
 						Q_SoA[f][d][i] = 0.5 * (U_SoA[f][i] + U_SoA[f][i + di]);
 						Q_SoA[f][d][i] += (1.0 / 6.0) * (D1_SoA[d][i] - D1_SoA[d][i + di]);

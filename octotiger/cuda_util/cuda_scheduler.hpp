@@ -102,7 +102,7 @@ namespace octotiger { namespace fmm {
     class hydro_staging_area 
     {
         public:
-        hydro_staging_area(hydro_tmp_t<double> &D1,
+        hydro_staging_area(std::vector<hydro_tmp_t<double>> &D1,
             std::vector<hydro_q_t<double>> &Q1,
             hydro_input_t<double> &U,
             hydro_loc_t<double> &X)
@@ -112,7 +112,7 @@ namespace octotiger { namespace fmm {
             , X_SoA(X)
             {}
             // Hydro Buffers
-            hydro_tmp_t<double> &D1_SoA;
+            std::vector<hydro_tmp_t<double>> &D1_SoA;
             std::vector<hydro_q_t<double>> &Q1_SoA;
             hydro_input_t<double> &U_SoA;
             hydro_loc_t<double> &X_SoA;
@@ -245,7 +245,7 @@ namespace octotiger { namespace fmm {
         std::vector<hydro_device_enviroment> hydro_device_enviroments;
 
         // Hydro
-        std::vector<hydro_tmp_t<double>> D1_SoA;
+        std::vector<std::vector<hydro_tmp_t<double>>> D1_SoA;
         std::vector<std::vector<hydro_q_t<double>>> Q1_SoA;
         std::vector<hydro_input_t<double>> U_SoA;
         std::vector<hydro_loc_t<double>> X_SoA;
