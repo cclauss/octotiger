@@ -77,13 +77,13 @@ void hydro_computer<NDIM, INX>::reconstruct_ppm(std::vector<std::vector<std::vec
 
 			std::vector<octotiger::fmm::struct_of_array_data<std::vector<safe_real>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>>
 				&Q_SoA2 = staging_area.Q1_SoA;
-			for (auto f = 0; f < nf_; f++) {
-			Q_SoA2[f].concatenate_vectors(Q_SoA[f]);
-			}
+			// for (auto f = face_offset; f < faces; f++) {
+			// Q_SoA2[f].concatenate_vectors(Q_SoA[f]);
+			// }
 
 			reconstruct_kernel_interface(D1_SoA, Q_SoA2, U_SoA2);
 
-			for (auto f = 0; f < nf_; f++) {
+			for (auto f = face_offset; f < faces; f++) {
 				for (auto component = 0; component < geo::NDIR; component++) {
 					Q_SoA2[f].copy_component(component, Q_SoA[f][component]);
 				}
