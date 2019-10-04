@@ -38,11 +38,11 @@ __device__ inline int to_index(int j, int k, int l) {
     return (j * H_NX + k) * H_NX + l;
 }
 
-__device__ inline double minmod(double a, double b) {
+__device__ double minmod(double a, double b) {
 	return (copysign(0.5, a) + copysign(0.5, b)) * min(abs(a), abs(b));
 }
 
-__device__ inline double minmod_theta(double a, double b, double c) {
+__device__ double minmod_theta(double a, double b, double c) {
 	return minmod(c * minmod(a, b), 0.5 * (a + b));
 }
 

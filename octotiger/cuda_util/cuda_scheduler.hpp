@@ -46,7 +46,7 @@ namespace octotiger { namespace fmm {
 
     constexpr std::size_t d1_size = H_N3 * NDIR * sizeof(real);
     constexpr std::size_t q_size = NF * H_N3 * NDIR * sizeof(real);
-    constexpr std::size_t u_size = H_N3 * NDIR * sizeof(real);
+    constexpr std::size_t u_size = H_N3 * NF * sizeof(real);
     constexpr std::size_t x_size = H_N3 * NDIM * sizeof(real);
 
     // Custom allocator for host-side CUDA vectors
@@ -90,13 +90,13 @@ namespace octotiger { namespace fmm {
     using pinned_vector = std::vector<T, cuda_pinned_allocator<T>>;
 
     template <typename T>
-    using hydro_tmp_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIR>, T, NDIR, H_N3, 19, pinned_vector<double>>;
+    using hydro_tmp_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIR>, T, NDIR, H_N3, 0, pinned_vector<double>>;
     template <typename T>
-    using hydro_q_t = octotiger::fmm::struct_of_array_data<std::vector<T>, T, NDIR, H_N3, 19, pinned_vector<double>>;
+    using hydro_q_t = octotiger::fmm::struct_of_array_data<std::vector<T>, T, NDIR, H_N3, 0, pinned_vector<double>>;
     template <typename T>
-    using hydro_input_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIR>, T, NDIR, H_N3, 19, pinned_vector<double>>;
+    using hydro_input_t = octotiger::fmm::struct_of_array_data<std::array<T, NF>, T, NF, H_N3, 0, pinned_vector<double>>;
     template <typename T>
-    using hydro_loc_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIM>, T, NDIM, H_N3, 19, pinned_vector<double>>;
+    using hydro_loc_t = octotiger::fmm::struct_of_array_data<std::array<T, NDIM>, T, NDIM, H_N3, 0, pinned_vector<double>>;
 
     // Contains references to all data needed for one Hydro kernel run
     class hydro_staging_area 

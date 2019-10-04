@@ -23,14 +23,14 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX>::reconstruct_cuda(hydro
 
 #ifdef OCTOTIGER_HAVE_CUDA
 	if constexpr (geo::NDIR == 27) {
-		static thread_local octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>
+		static thread_local octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 0, octotiger::fmm::pinned_vector<safe_real>>
 		D1_SoA;
-		static thread_local std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>> Q_SoA(nf_);
+		static thread_local std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 0, octotiger::fmm::pinned_vector<safe_real>>> Q_SoA(nf_);
 
-		octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>
+		octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 0, octotiger::fmm::pinned_vector<safe_real>>
 			U_SoA;
 			U_SoA.concatenate_vectors(U_);
-		octotiger::fmm::struct_of_array_data<std::array<safe_real, NDIM>, safe_real, NDIM, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>
+		octotiger::fmm::struct_of_array_data<std::array<safe_real, NDIM>, safe_real, NDIM, geo::H_N3, 0, octotiger::fmm::pinned_vector<safe_real>>
 			X_SoA;
 			X_SoA.concatenate_vectors(X);
 
@@ -68,14 +68,14 @@ void hydro_computer<NDIM, INX>::reconstruct_ppm(std::vector<std::vector<std::vec
 			auto env =
 				octotiger::fmm::kernel_scheduler::scheduler().get_hydro_device_enviroment(slot);
 
-			std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>>> &D1_SoA =
+			std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 0, octotiger::fmm::pinned_vector<safe_real>>> &D1_SoA =
 				staging_area.D1_SoA;
 
-			octotiger::fmm::struct_of_array_data<std::array<safe_real, geo::NDIR>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>
+			octotiger::fmm::struct_of_array_data<std::array<safe_real, 15>, safe_real, 15, geo::H_N3, 0, octotiger::fmm::pinned_vector<safe_real>>
 				&U_SoA2 = staging_area.U_SoA;
 			U_SoA2.concatenate_vectors(U_SoA);
 
-			std::vector<octotiger::fmm::struct_of_array_data<std::vector<safe_real>, safe_real, geo::NDIR, geo::H_N3, 19, octotiger::fmm::pinned_vector<safe_real>>>
+			std::vector<octotiger::fmm::struct_of_array_data<std::vector<safe_real>, safe_real, geo::NDIR, geo::H_N3, 0, octotiger::fmm::pinned_vector<safe_real>>>
 				&Q_SoA2 = staging_area.Q1_SoA;
 			// for (auto f = face_offset; f < faces; f++) {
 			// Q_SoA2[f].concatenate_vectors(Q_SoA[f]);

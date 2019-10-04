@@ -289,7 +289,7 @@ namespace octotiger { namespace fmm {
                             d1_size * NF));
                     util::cuda_helper::cuda_error(
                         cudaMalloc(reinterpret_cast<void**>(&(env.device_Q1)),
-                            q_size));
+                            2744 * 27 * 15 * sizeof(double)));
                     util::cuda_helper::cuda_error(
                         cudaMalloc(reinterpret_cast<void**>(&(env.device_U)),
                             u_size));

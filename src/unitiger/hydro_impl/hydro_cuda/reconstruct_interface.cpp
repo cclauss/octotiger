@@ -8,9 +8,9 @@
 
 #ifdef OCTOTIGER_HAVE_CUDA
 void reconstruct_ppm_interface(
-	std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>>> &D1,
-	std::vector<octotiger::fmm::struct_of_array_data<std::vector<safe_real>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>>> &Q,
-	octotiger::fmm::struct_of_array_data<std::array<safe_real,27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &U, int slot,
+	std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 0, octotiger::fmm::pinned_vector<safe_real>>> &D1,
+	std::vector<octotiger::fmm::struct_of_array_data<std::vector<safe_real>, safe_real, 27, 2744, 0, octotiger::fmm::pinned_vector<safe_real>>> &Q,
+	octotiger::fmm::struct_of_array_data<std::array<safe_real,15>, safe_real, 15, 2744, 0, octotiger::fmm::pinned_vector<safe_real>> &U, int slot,
 	 int start_face, int end_face) {
 
 	// Get interface
@@ -28,9 +28,18 @@ void reconstruct_ppm_interface(
 	// gpu_interface.copy_async(env.device_D1,
 	// 	D1.get_pod(),
 	// 	octotiger::fmm::d1_size, cudaMemcpyHostToDevice);
+	gpu_interface.memset_async(env.device_U, 0, sizeof(double) * 15 * 2744);
+	// for (size_t i = start_face; i < end_face; i++) {
+	// 	gpu_interface.copy_async(env.device_U + i*(2744) * sizeof(double),
+	// 		U.get_pod() + i * (2744 + 0) * sizeof(double),
+	// 		2744 * sizeof(double), cudaMemcpyHostToDevice);
+	// }
 	gpu_interface.copy_async(env.device_U,
-		U.get_pod(),
-		octotiger::fmm::u_size, cudaMemcpyHostToDevice);
+	U.get_pod(),
+	octotiger::fmm::u_size, cudaMemcpyHostToDevice);
+	gpu_interface.memset_async(env.device_D1, 0, sizeof(double) * 27 * 15 * 2744);
+	if (start_face == 0)
+	gpu_interface.memset_async(env.device_Q1, 0, sizeof(double) * 27 * 15 * 2744);
 	int offset = start_face;
 	void* args1[] = {&(env.device_D1),
 		&(env.device_U), &offset};
@@ -43,19 +52,24 @@ void reconstruct_ppm_interface(
 	gpu_interface.execute(
 		reinterpret_cast<void*>(&kernel_ppm1),
 		grid_spec, threads_per_block, args1, 0);
+	cudaError_t const response =
+		gpu_interface.pass_through(
+			[](cudaStream_t& stream) -> cudaError_t {
+				return cudaStreamSynchronize(stream);
+			});
 	gpu_interface.execute(
 		reinterpret_cast<void*>(&kernel_ppm2),
 		grid_spec, threads_per_block, args2, 0);
 
 				
 	for (size_t i = start_face; i < end_face; i++) {
-		gpu_interface.copy_async(
-		(Q[i]).get_pod(),env.device_Q1 + (octotiger::fmm::q_size) / (15 * sizeof(safe_real)) * i,
-		octotiger::fmm::q_size/15, cudaMemcpyDeviceToHost);
+			gpu_interface.copy_async(
+			(Q[i]).get_pod(),env.device_Q1 + octotiger::fmm::q_size / (15 * sizeof(safe_real)) * i,
+			octotiger::fmm::q_size/15, cudaMemcpyDeviceToHost);
 	}
 	// auto fut = gpu_interface.get_future();
 	// fut.get();
-	cudaError_t const response =
+	cudaError_t const response2 =
 		gpu_interface.pass_through(
 			[](cudaStream_t& stream) -> cudaError_t {
 				return cudaStreamSynchronize(stream);
@@ -63,10 +77,10 @@ void reconstruct_ppm_interface(
 }
 
 void reconstruct_kernel_interface_sample(
-	octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &D1,
-	std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>>> &Q,
-	octotiger::fmm::struct_of_array_data<std::array<safe_real,27>, safe_real, 27, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &U,
-	octotiger::fmm::struct_of_array_data<std::array<safe_real, 3>, safe_real, 3, 2744, 19, octotiger::fmm::pinned_vector<safe_real>> &X) {
+	octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 0, octotiger::fmm::pinned_vector<safe_real>> &D1,
+	std::vector<octotiger::fmm::struct_of_array_data<std::array<safe_real, 27>, safe_real, 27, 2744, 0, octotiger::fmm::pinned_vector<safe_real>>> &Q,
+	octotiger::fmm::struct_of_array_data<std::array<safe_real,27>, safe_real, 27, 2744, 0, octotiger::fmm::pinned_vector<safe_real>> &U,
+	octotiger::fmm::struct_of_array_data<std::array<safe_real, 3>, safe_real, 3, 2744, 0, octotiger::fmm::pinned_vector<safe_real>> &X) {
 
     // octotiger::fmm::kernel_scheduler::scheduler().init();
 	// // Get Slot
