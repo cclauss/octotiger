@@ -6,6 +6,8 @@
 #include "octotiger/radiation/rad_grid.hpp"
 #include "octotiger/test_problems/exact_sod.hpp"
 
+#include <fenv.h>
+
 #include "octotiger/diagnostics.hpp"
 #include "octotiger/future.hpp"
 #include "octotiger/grid.hpp"
@@ -19,7 +21,6 @@
 #include "octotiger/test_problems/amr/amr.hpp"
 #include "octotiger/unitiger/hydro_impl/reconstruct.hpp"
 #include "octotiger/unitiger/hydro_impl/flux.hpp"
-
 
 #include <hpx/include/runtime.hpp>
 #include <hpx/lcos/broadcast.hpp>
@@ -55,6 +56,10 @@ void grid::set_outflows(std::vector<std::pair<std::string, real>> &&u) {
 
 void grid::set_outflow(std::pair<std::string, real> &&p) {
 	U_out[str_to_index_hydro[p.first]] = p.second;
+	U_out[rho_i] = 0.0;
+	for (integer s = 0; s < opts().n_species; s++) {
+		U_out[rho_i] += U_out[spc_i + s];
+	}
 }
 
 void grid::static_init() {
@@ -66,12 +71,12 @@ void grid::static_init() {
 	str_to_index_hydro[std::string("sx")] = sx_i;
 	str_to_index_hydro[std::string("sy")] = sy_i;
 	str_to_index_hydro[std::string("sz")] = sz_i;
+	str_to_index_hydro[std::string("pot_i")] = pot_i;
 	if (opts().angmom) {
 		str_to_index_hydro[std::string("zx")] = zx_i;
 		str_to_index_hydro[std::string("zy")] = zy_i;
 		str_to_index_hydro[std::string("zz")] = zz_i;
 	}
-	str_to_index_gravity[std::string("phi")] = phi_i;
 	str_to_index_gravity[std::string("gx")] = gx_i;
 	str_to_index_gravity[std::string("gy")] = gy_i;
 	str_to_index_gravity[std::string("gz")] = gz_i;
@@ -158,7 +163,7 @@ real grid::convert_hydro_units(int i) {
 			val *= g / (cm * cm * cm);
 		} else if (i >= sx_i && i <= sz_i) {
 			val *= g / (s * cm * cm);
-		} else if (i == egas_i || (i >= zx_i && i <= zz_i)) {
+		} else if (i == egas_i || (i >= zx_i && i <= zz_i) || i == pot_i) {
 			val *= g / (s * s * cm);
 		} else if (i == tau_i) {
 			val *= POWER(g / (s * s * cm), 1.0 / fgamma);
@@ -281,6 +286,10 @@ std::vector<silo_var_t> grid::var_data() const {
 // MSVC needs this variable to be in the global namespace
 constexpr integer nspec = 2;
 diagnostics_t grid::diagnostics(const diagnostics_t &diags) {
+	fedisableexcept(FE_DIVBYZERO);
+	fedisableexcept(FE_INVALID);
+	fedisableexcept(FE_OVERFLOW);
+
 	diagnostics_t rc;
 	if (opts().disable_diagnostics) {
 		return rc;
@@ -485,8 +494,7 @@ diagnostics_t grid::diagnostics(const diagnostics_t &diags) {
 						i = -1;
 					}
 					if (i != -1) {
-						const real dX[NDIM] = { (x - diags.com[i][XDIM]), (y - diags.com[i][YDIM]), (z
-								- diags.com[i][ZDIM]) };
+						const real dX[NDIM] = { (x - diags.com[i][XDIM]), (y - diags.com[i][YDIM]), (z - diags.com[i][ZDIM]) };
 						rc.js[i] += dX[0] * U[sy_i][iii] * dV;
 						rc.js[i] -= dX[1] * U[sx_i][iii] * dV;
 						rc.gt[i] += dX[0] * G[iiig][gy_i] * dV * rho0;
@@ -602,6 +610,10 @@ diagnostics_t grid::diagnostics(const diagnostics_t &diags) {
 		rc.grid_out[f] += U_out[f];
 	}
 	rc.grid_out[egas_i] += U_out[pot_i];
+	feenableexcept(FE_DIVBYZERO);
+	feenableexcept(FE_INVALID);
+	feenableexcept(FE_OVERFLOW);
+
 	return rc;
 }
 
@@ -766,8 +778,7 @@ space_vector grid::get_cell_center(integer i, integer j, integer k) {
 	return c;
 }
 
-std::vector<real> grid::get_prolong(const std::array<integer, NDIM> &lb, const std::array<integer, NDIM> &ub,
-		bool etot_only) {
+std::vector<real> grid::get_prolong(const std::array<integer, NDIM> &lb, const std::array<integer, NDIM> &ub, bool etot_only) {
 	PROF_BEGIN;
 	auto &dUdx = TLS_dUdx();
 	auto &tmpz = TLS_zz();
@@ -1328,7 +1339,7 @@ void grid::set_omega(real omega, bool bcast) {
 			}
 		}
 	}
-	std::unique_lock < hpx::lcos::local::spinlock > l(grid::omega_mtx, std::try_to_lock);
+	std::unique_lock<hpx::lcos::local::spinlock> l(grid::omega_mtx, std::try_to_lock);
 // if someone else has the lock, it's fine, we just return and have it set
 // by the other thread
 	if (!l)
@@ -1680,8 +1691,8 @@ space_vector grid::center_of_mass() const {
 }
 
 grid::grid(real _dx, std::array<real, NDIM> _xmin) :
-		is_coarse(H_N3), Ushad(opts().n_fields), U(opts().n_fields), U0(opts().n_fields), dUdt(opts().n_fields), F(
-				NDIM), X(NDIM), G(NGF), is_root(false), is_leaf(true) {
+		is_coarse(H_N3), Ushad(opts().n_fields), U(opts().n_fields), U0(opts().n_fields), dUdt(opts().n_fields), F(NDIM), X(NDIM), G(NGF), is_root(false), is_leaf(
+				true) {
 	dx = _dx;
 	xmin = _xmin;
 	allocate();
@@ -1861,8 +1872,7 @@ void grid::compute_conserved_slopes(const std::array<integer, NDIM> lb, const st
 						const integer iii = hindex(i, j, k);
 						dU[rho_i][iii] = 0.0;
 						for (integer si = 0; si != opts().n_species; ++si) {
-							dU[spc_i + si][iii] = V[spc_i + si][iii] * dV[rho_i][iii]
-									+ dV[spc_i + si][iii] * V[rho_i][iii];
+							dU[spc_i + si][iii] = V[spc_i + si][iii] * dV[rho_i][iii] + dV[spc_i + si][iii] * V[rho_i][iii];
 							dU[rho_i][iii] += dU[spc_i + si][iii];
 						}
 						if (opts().gravity) {
@@ -1871,12 +1881,11 @@ void grid::compute_conserved_slopes(const std::array<integer, NDIM> lb, const st
 						//						dU[egas_i][iii] = V[egas_i][iii] * dV[rho_i][iii] + dV[egas_i][iii] * V[rho_i][iii];
 						dU[egas_i][iii] = dV[egas_i][iii];
 						for (integer d1 = 0; d1 != NDIM; ++d1) {
-							dU[sx_i + d1][iii] = V[sx_i + d1][iii] * dV[rho_i][iii]
-									+ dV[sx_i + d1][iii] * V[rho_i][iii];
+							dU[sx_i + d1][iii] = V[sx_i + d1][iii] * dV[rho_i][iii] + dV[sx_i + d1][iii] * V[rho_i][iii];
 							dU[egas_i][iii] += V[rho_i][iii] * (V[sx_i + d1][iii] * dV[sx_i + d1][iii]);
 							dU[egas_i][iii] += dV[rho_i][iii] * 0.5 * sqr(V[sx_i + d1][iii]);
 							if (opts().angmom) {
-								dU[zx_i + d1][iii] = V[zx_i + d1][iii] * dV[rho_i][iii];// + dV[zx_i + d1][iii] * V[rho_i][iii];
+								dU[zx_i + d1][iii] = V[zx_i + d1][iii] * dV[rho_i][iii];	// + dV[zx_i + d1][iii] * V[rho_i][iii];
 							}
 						}
 						if (opts().eos == WD) {
@@ -1974,6 +1983,7 @@ std::vector<std::pair<std::string, std::string>> grid::get_scalar_expressions() 
 	} else {
 		rc.push_back(std::make_pair(std::string("T"), hpx::util::format("{:e} * ei / n", 1.0 / (kb / (fgamma - 1.0)))));
 	}
+	rc.push_back(std::make_pair(std::string("phi"), std::string( "pot/rho")));
 	rc.push_back(std::make_pair(std::string("P"), hpx::util::format("{:e} * ei", (fgamma - 1.0))));
 	rc.push_back(
 			std::make_pair(std::string("B_p"), hpx::util::format("{:e} * T^4", physcon().sigma / M_PI * opts().code_to_g * std::pow(opts().code_to_cm, 3))));
@@ -2048,7 +2058,7 @@ void grid::allocate() {
 		U0[field].resize(INX * INX * INX);
 
 		U[field].resize(H_N3, 0.0);
-		Ushad[field].resize(HS_N3,0.0);
+		Ushad[field].resize(HS_N3, 0.0);
 		dUdt[field].resize(INX * INX * INX);
 		for (integer dim = 0; dim != NDIM; ++dim) {
 			F[dim][field].resize(F_N3);
@@ -2069,16 +2079,14 @@ void grid::allocate() {
 }
 
 grid::grid() :
-		is_coarse(H_N3), Ushad(opts().n_fields), U(opts().n_fields), U0(opts().n_fields), dUdt(opts().n_fields), F(
-				NDIM), X(NDIM), G(NGF), dphi_dt(H_N3), is_root(false), is_leaf(true), U_out(opts().n_fields, ZERO), U_out0(
-				opts().n_fields, ZERO) {
+		is_coarse(H_N3), Ushad(opts().n_fields), U(opts().n_fields), U0(opts().n_fields), dUdt(opts().n_fields), F(NDIM), X(NDIM), G(NGF), dphi_dt(H_N3), is_root(
+				false), is_leaf(true), U_out(opts().n_fields, ZERO), U_out0(opts().n_fields, ZERO) {
 //	allocate();
 }
 
 grid::grid(const init_func_type &init_func, real _dx, std::array<real, NDIM> _xmin) :
-		is_coarse(H_N3), Ushad(opts().n_fields), U(opts().n_fields), U0(opts().n_fields), dUdt(opts().n_fields), F(
-				NDIM), X(NDIM), G(NGF), is_root(false), is_leaf(true), U_out(opts().n_fields, ZERO), U_out0(
-				opts().n_fields, ZERO), dphi_dt(H_N3) {
+		is_coarse(H_N3), Ushad(opts().n_fields), U(opts().n_fields), U0(opts().n_fields), dUdt(opts().n_fields), F(NDIM), X(NDIM), G(NGF), is_root(false), is_leaf(
+				true), U_out(opts().n_fields, ZERO), U_out0(opts().n_fields, ZERO), dphi_dt(H_N3) {
 	PROF_BEGIN;
 	dx = _dx;
 	xmin = _xmin;
@@ -2099,7 +2107,7 @@ grid::grid(const init_func_type &init_func, real _dx, std::array<real, NDIM> _xm
 			}
 		}
 	}
-	if( opts().angmom) {
+	if (opts().angmom) {
 		init_z_field();
 	}
 	if (opts().radiation) {
@@ -2117,23 +2125,25 @@ grid::grid(const init_func_type &init_func, real _dx, std::array<real, NDIM> _xm
 }
 
 void grid::init_z_field() {
-	for( int j = H_BW; j < H_NX - H_BW; j++) {
-	for( int k = H_BW; k < H_NX - H_BW; k++) {
-	for( int l = H_BW; l < H_NX - H_BW; l++) {
-		const int i = hindex(j,k,l);
-		auto dsx_dy = U[sx_i][i+H_DNY] - U[sx_i][i-H_DNY];
-		auto dsx_dz = U[sx_i][i+H_DNZ] - U[sx_i][i-H_DNZ];
+	for (int j = H_BW; j < H_NX - H_BW; j++) {
+		for (int k = H_BW; k < H_NX - H_BW; k++) {
+			for (int l = H_BW; l < H_NX - H_BW; l++) {
+				const int i = hindex(j, k, l);
+				auto dsx_dy = U[sx_i][i + H_DNY] - U[sx_i][i - H_DNY];
+				auto dsx_dz = U[sx_i][i + H_DNZ] - U[sx_i][i - H_DNZ];
 
-		auto dsy_dx = U[sy_i][i+H_DNX] - U[sy_i][i-H_DNX];
-		auto dsy_dz = U[sy_i][i+H_DNZ] - U[sy_i][i-H_DNZ];
+				auto dsy_dx = U[sy_i][i + H_DNX] - U[sy_i][i - H_DNX];
+				auto dsy_dz = U[sy_i][i + H_DNZ] - U[sy_i][i - H_DNZ];
 
-		auto dsz_dy = U[sz_i][i+H_DNY] - U[sz_i][i-H_DNY];
-		auto dsz_dx = U[sz_i][i+H_DNX] - U[sz_i][i-H_DNX];
+				auto dsz_dy = U[sz_i][i + H_DNY] - U[sz_i][i - H_DNY];
+				auto dsz_dx = U[sz_i][i + H_DNX] - U[sz_i][i - H_DNX];
 
-		U[zx_i][i] = 0.5*(dx / 12.0) * (dsz_dy - dsy_dz);
-		U[zy_i][i] = 0.5*(dx / 12.0) * (dsx_dz - dsz_dx);
-		U[zz_i][i] = 0.5*(dx / 12.0) * (dsy_dx - dsx_dy);
-		}}}
+				U[zx_i][i] = 0.5 * (dx / 12.0) * (dsz_dy - dsy_dz);
+				U[zy_i][i] = 0.5 * (dx / 12.0) * (dsx_dz - dsz_dx);
+				U[zz_i][i] = 0.5 * (dx / 12.0) * (dsy_dx - dsx_dy);
+			}
+		}
+	}
 }
 
 void grid::rad_init() {
@@ -2243,7 +2253,7 @@ void grid::set_physical_boundaries(const geo::face &face, real t) {
 		for (integer k = klb; k != kub; ++k) {
 			for (integer j = jlb; j != jub; ++j) {
 				for (integer i = ilb; i != iub; ++i) {
-					const auto iii = hindex(i,j,k);
+					const auto iii = hindex(i, j, k);
 					const auto u = amr_test(X[XDIM][iii], X[YDIM][iii], X[ZDIM][iii], dx);
 					for (int f = 0; f < opts().n_fields; f++) {
 						U[f][iii] = u[f];

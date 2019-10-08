@@ -4,6 +4,7 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include "octotiger/config.hpp"
+#include <fenv.h>
 
 #include "octotiger/diagnostics.hpp"
 #include "octotiger/future.hpp"
@@ -174,6 +175,10 @@ analytic_t node_server::compare_analytic() {
 }
 
 const diagnostics_t& diagnostics_t::compute() {
+	fedisableexcept(FE_DIVBYZERO);
+	fedisableexcept(FE_INVALID);
+	fedisableexcept(FE_OVERFLOW);
+
 	if (virial_norm != 0.0) {
 		virial /= virial_norm;
 	}
@@ -211,6 +216,11 @@ const diagnostics_t& diagnostics_t::compute() {
 		tidal[s] *= m[1 - s];
 	}
 	z_mom_orb = mu * sep2;
+
+	feenableexcept(FE_DIVBYZERO);
+	feenableexcept(FE_INVALID);
+	feenableexcept(FE_OVERFLOW);
+
 	return *this;
 }
 
@@ -250,23 +260,24 @@ diagnostics_t node_server::diagnostics() {
 			fprintf(fp, "%13e ", diags.rho_max[1]);
 			fprintf(fp, "\n");
 			fclose(fp);
+        		fp = fopen("sums.dat", "at");
+        		fprintf(fp, "%.13e ", current_time);
+        		for (integer i = 0; i != opts().n_fields; ++i) {
+                		fprintf(fp, "%.13e ", diags.grid_sum[i] + diags.grid_out[i]);
+                		fprintf(fp, "%.13e ", diags.grid_out[i]);
+        		}
+        		for (integer i = 0; i != 3; ++i) {
+                		fprintf(fp, "%.13e ", diags.lsum[i]);
+        		}
+        		fprintf(fp, "\n");
+        		fclose (fp);
+
 		} else {
 			printf("Failed to write binary.dat\n");
 		}
 	} else {
 		printf("Failed to compute Roche geometry\n");
 	}
-	FILE* fp = fopen("sums.dat", "at");
-	fprintf(fp, "%.13e ", current_time);
-	for (integer i = 0; i != opts().n_fields; ++i) {
-		fprintf(fp, "%.13e ", diags.grid_sum[i] + diags.grid_out[i]);
-		fprintf(fp, "%.13e ", diags.grid_out[i]);
-	}
-	for (integer i = 0; i != 3; ++i) {
-		fprintf(fp, "%.13e ", diags.lsum[i]);
-	}
-	fprintf(fp, "\n");
-	fclose (fp);
 	return diags;
 }
 
