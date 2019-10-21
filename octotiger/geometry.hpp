@@ -6,7 +6,7 @@
 #ifndef GEOMETRY_HPP_
 #define GEOMETRY_HPP_
 
-#include "octotiger/defs.hpp"
+#include "octotiger/dims.hpp"
 
 #include <array>
 #include <cassert>
@@ -210,7 +210,7 @@ public:
 		return (i >> dim) & 1;
 	}
 	octant neighbor(const direction& dir) {
-		integer ci = static_cast<integer>(ZERO);
+		integer ci = static_cast<integer>(0);
 		for (auto& d : dimension::full_set()) {
 			const integer bit = integer(1) << integer(d);
 			if (dir[d] == 0) {

@@ -6,7 +6,9 @@
 #if !defined(DEFS_HPP_)
 #define DEFS_HPP_
 
-#include "octotiger/real.hpp"
+#include "octotiger/types.hpp"
+#include "octotiger/dims.hpp"
+
 
 #include <array>
 //#include <cstddef>
@@ -66,7 +68,7 @@ constexpr int NRF = 4;
 #   endif
 #endif
 
-using integer = long long int;
+
 
 //using byte = unsigned char;
 
@@ -137,20 +139,6 @@ constexpr integer vy_i = sy_i;
 constexpr integer vz_i = sz_i;
 constexpr integer h_i = egas_i;
 
-constexpr integer XDIM = 0;
-constexpr integer YDIM = 1;
-constexpr integer ZDIM = 2;
-
-constexpr integer FXM = 0;
-constexpr integer FXP = 1;
-constexpr integer FYM = 2;
-constexpr integer FYP = 3;
-constexpr integer FZM = 4;
-constexpr integer FZP = 5;
-
-constexpr integer NFACE = 2 * NDIM;
-constexpr integer NVERTEX = 8;
-constexpr integer NCHILD = 8;
 
 constexpr real ZERO = real(0);
 constexpr real ONE = real(1);

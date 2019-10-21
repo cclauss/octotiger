@@ -31,8 +31,9 @@ endif()
 ################################################################################
 # Set up silo_convert
 ################################################################################
-add_executable(silo_convert silo_convert/plain_silo.cpp silo_convert/ucd_silo.cpp silo_convert/restart_silo.cpp silo_convert/silo_convert.cpp silo_convert/silo_convert.hpp)
+add_executable(silo_convert ../src/node_location.cpp ../octotiger/node_location.hpp silo_convert/plain_silo.cpp silo_convert/ucd_silo.cpp silo_convert/restart_silo.cpp silo_convert/silo_convert.cpp silo_convert/silo_convert.hpp)
 target_link_libraries(silo_convert Silo::silo boost_program_options)
+target_include_directories(silo_convert PUBLIC ../)
 set_property(TARGET silo_convert PROPERTY FOLDER "Tools")
 if(MSVC)
   target_compile_definitions(silo_convert PRIVATE

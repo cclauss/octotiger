@@ -6,7 +6,6 @@
 #ifndef NODE_LOCATION_HPP_
 #define NODE_LOCATION_HPP_
 
-#include "octotiger/defs.hpp"
 #include "octotiger/geometry.hpp"
 
 #include <hpx/include/components.hpp>
@@ -51,8 +50,6 @@ public:
 	bool operator <=(const node_location& other) const;
 	std::size_t unique_id() const;
 	hpx::future<void> register_client(const node_client& client) const;
-//	hpx::future<hpx::id_type> get_id() const;
-//	hpx::future<node_client> get_client() const;
 	bool is_physical_boundary(integer) const;
 	real x_location(integer d) const;
 	std::string to_str() const;
@@ -68,7 +65,6 @@ public:
 	node_location get_neighbor(const geo::direction dir) const;
 	bool is_child_of(const node_location& other) const;
 	bool neighbors_with( const node_location& ) const;
-	range_type abs_range() const;
 };
 
 namespace hpx { namespace traits
