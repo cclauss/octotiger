@@ -29,6 +29,7 @@ auto split_silo_id(const std::string str) {
 struct options {
 	std::string input;
 	std::string output;
+	int output_type;
 
 	int read_options(int argc, char *argv[]) {
 		namespace po = boost::program_options;
@@ -36,8 +37,9 @@ struct options {
 		po::options_description command_opts("options");
 
 		command_opts.add_options() //
-		("output", po::value<std::string>(&output)->default_value(""), "output filename")           //
 		("input", po::value<std::string>(&input)->default_value(""), "input filename")           //
+		("output", po::value<std::string>(&output)->default_value(""), "output filename")           //
+		("output_type", po::value<int>(&output_type)->default_value(0), "0 - flat SILO\n1 - UCD SILO")           //
 				;
 		boost::program_options::variables_map vm;
 		po::store(po::parse_command_line(argc, argv, command_opts), vm);
@@ -112,7 +114,18 @@ int main(int argc, char *argv[]) {
 
 	DBFreeMultimesh(mesh);
 
-	silo_output* output = dynamic_cast<silo_output*>(new plain_silo(opts.output));
+	silo_output* output;
+	switch(opts.output_type) {
+	case 0:
+		output = dynamic_cast<silo_output*>(new plain_silo(opts.output));
+		break;
+	case 1:
+		output = dynamic_cast<silo_output*>(new ucd_silo(opts.output));
+		break;
+	default:
+		printf( "Illegal output type selected\n");
+		abort();
+	};
 
 	int counter = 0;
 	long long int n_species, cycle;
