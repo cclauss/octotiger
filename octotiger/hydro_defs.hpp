@@ -8,7 +8,7 @@
 
 #include <cmath>
 
-static constexpr int NDIM = 3;
+#include "octotiger/dims.hpp"
 
 static constexpr int rho_i = 0;
 static constexpr int egas_i = 1;

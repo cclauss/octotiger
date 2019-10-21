@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
 		const auto &name = split_name.second;
 		auto db = DBOpenReal(filename.c_str(), SILO_DRIVER, DB_READ);
 		auto mesh = DBGetQuadmesh(db, name.c_str());
-		printf("\r%s                              ", mesh_name.c_str());
+//		printf("\r%s                              ", mesh_name.c_str());
 		const auto dir = mesh_to_dirname(name);
 
 		output->add_mesh(dir, mesh);

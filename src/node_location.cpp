@@ -14,7 +14,6 @@
  */
 
 #include "octotiger/node_location.hpp"
-#include "octotiger/node_client.hpp"
 
 #include <cstdio>
 
@@ -32,17 +31,6 @@ range_type intersection(const range_type& r1, const range_type& r2) {
 		}
 	}
 	return ri;
-}
-
-
-range_type node_location::abs_range() const {
-	range_type range;
-	integer shift = opts().max_level - level();
-	for( int d = 0; d < NDIM; d++) {
-		range[d].first = (INX*xloc[d]) << shift;
-		range[d].second = (INX*(xloc[d]+1)) << shift;
-	}
-	return std::move(range);
 }
 
 
@@ -196,7 +184,7 @@ bool node_location::is_child_of(const node_location& other) const {
 }
 
 real node_location::x_location(integer d) const {
-	const real dx = TWO / real(1 << lev);
+	const real dx = 2. / real(1 << lev);
 	return real(xloc[d]) * dx - 1.0;
 }
 
