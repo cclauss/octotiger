@@ -34,3 +34,20 @@ public:
 
 	virtual ~plain_silo();
 };
+
+
+class ucd_silo: public silo_output {
+private:
+	DBfile *db;
+	double dtime;
+	float time;
+	int cycle;
+public:
+
+	ucd_silo(const std::string filename);
+	virtual void add_mesh(std::string dir, DBquadmesh *mesh);
+	virtual void add_var(std::string dir, DBquadvar *var);
+	virtual void set_vars( double omega, int n_species, const std::vector<double>& atomic_mass, const std::vector<double>& atomic_number);
+
+	virtual ~ucd_silo();
+};
