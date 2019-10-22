@@ -7,9 +7,12 @@
 #define NODE_LOCATION_HPP_
 
 #include "octotiger/geometry.hpp"
+#include <vector>
 
+#ifndef NO_HPX
 #include <hpx/include/components.hpp>
 #include <hpx/serialization/traits/is_bitwise_serializable.hpp>
+#endif
 
 #include <array>
 
@@ -49,7 +52,6 @@ public:
 	bool operator >(const node_location& other) const;
 	bool operator <=(const node_location& other) const;
 	std::size_t unique_id() const;
-	hpx::future<void> register_client(const node_client& client) const;
 	bool is_physical_boundary(integer) const;
 	real x_location(integer d) const;
 	std::string to_str() const;
@@ -67,6 +69,7 @@ public:
 	bool neighbors_with( const node_location& ) const;
 };
 
+#ifndef NO_HPX
 namespace hpx { namespace traits
 {
     template <>
@@ -74,5 +77,7 @@ namespace hpx { namespace traits
       : std::true_type
     {};
 }}
+#endif
+
 
 #endif /* NODE_LOCATION_HPP_ */
