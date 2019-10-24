@@ -32,7 +32,7 @@ endif()
 # Set up silo_convert
 ################################################################################
 add_executable(silo_convert silo_convert/plain_silo.cpp silo_convert/restart_silo.cpp silo_convert/silo_convert.cpp silo_convert/silo_convert.hpp)
-target_link_libraries(silo_convert Silo::silo boost_program_options)
+target_link_libraries(silo_convert Silo::silo Boost::boost)
 set_property(TARGET silo_convert PROPERTY FOLDER "Tools")
 if(MSVC)
   target_compile_definitions(silo_convert PRIVATE
