@@ -160,42 +160,17 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX, PHYS>::reconstruct(cons
 		}
 	};
 
-	const auto reconstruct_constant = [this](std::vector<std::vector<safe_real>> &q, const std::vector<safe_real> &u) {
-		for (int d = 0; d < geo::NDIR; d++) {
-			const auto di = dir[d];
-			for (int j = 0; j < geo::H_NX_XM6; j++) {
-				for (int k = 0; k < geo::H_NX_YM6; k++) {
-					for (int l = 0; l < geo::H_NX_ZM6; l++) {
-						const int i = geo::to_index(j + 3, k + 3, l + 3);
-						q[d][i] = u[i];
-					}
-				}
-			}
-		}
-	};
-
+	for (int f = 0; f < nf_; f++) {
+		reconstruct_ppm(Q_SoA[f], U[f], smooth_field_[f], slim_field_[f]);
+	}
 	if (angmom_count_ == 0 || NDIM == 1) {
-		for (int f = 0; f < nf_; f++) {
-			reconstruct_ppm(Q_SoA[f], U[f], smooth_field_[f], slim_field_[f]);
-		}
-
 	} else {
-		for (int f = 0; f < angmom_index_; f++) {
-			reconstruct_ppm(Q_SoA[f], U[f], smooth_field_[f], slim_field_[f]);
-		}
-
 		int sx_i = angmom_index_;
 		int zx_i = sx_i + NDIM;
 
 		SoA2AoS(rho_i, rho_i + 1);
 
 		for (int angmom_pair = 0; angmom_pair < angmom_count_; angmom_pair++) {
-			for (int f = sx_i; f < sx_i + NDIM; f++) {
-				reconstruct_ppm(Q_SoA[f], U[f], false, false);
-			}
-			for (int f = zx_i; f < zx_i + geo::NANGMOM; f++) {
-				reconstruct_constant(Q_SoA[f], U[f]);
-			}
 
 			SoA2AoS(sx_i, sx_i + NDIM);
 
@@ -315,9 +290,6 @@ const hydro::recon_type<NDIM>& hydro_computer<NDIM, INX, PHYS>::reconstruct(cons
 
 			sx_i += geo::NANGMOM + NDIM;
 			zx_i += geo::NANGMOM + NDIM;
-		}
-		for (int f = angmom_index_ + angmom_count_ * (geo::NANGMOM + NDIM); f < nf_; f++) {
-			reconstruct_ppm(Q_SoA[f], U[f], smooth_field_[f], slim_field_[f]);
 		}
 
 	}

@@ -71,7 +71,6 @@ void grid::static_init() {
 	energy_bw[egas_i] = 1;
 	field_bw[rho_i] = 4;
 	for( int dim = 0; dim < NDIM; dim++) {
-		field_bw[lx_i + dim] = 2;
 		field_bw[sx_i + dim] = 4;
 	}
 
