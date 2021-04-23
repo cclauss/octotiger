@@ -8,7 +8,7 @@ From <https://doi.org/10.1145/3204919.3204938>:
 > Octo-Tiger is an astrophysics program simulating the evolution of star systems
 > based on the fast multipole method on adaptive Octrees. It was implemented using
 > high-level C++ libraries, specifically HPX and Vc, which allows its use on
-> different hardware platforms
+> different hardware platforms.
 
 ## Build Status
 
@@ -16,8 +16,8 @@ Current status of the [CircleCI](https://circleci.com/gh/STEllAR-GROUP/octotiger
 integration service for the master branch:
 [![link](https://circleci.com/gh/STEllAR-GROUP/octotiger/tree/master.svg?style=shield)](https://circleci.com/gh/STEllAR-GROUP/octotiger/tree/master)
 
-> Note for maintainers: The base Docker image used by CircleCI needs to be built
-> and updated manually. Neither HPX or any of the other dependencies update
+> **Note for maintainers**: The base Docker image used by CircleCI needs to be built
+> and updated manually. Neither HPX nor any of the other dependencies update
 > automatically. Relevant files are under
 > [`tools/docker/base_image`](tools/docker/base_image).
 
