@@ -41,11 +41,11 @@ integration service for the master branch:
 
 ## Citing
 
-In publications, please use following publication, to cite Octo-Tiger
+In publications, please use the following publication to cite Octo-Tiger:
 
 *  Dominic C. Marcello, Sagiv Shiber, Orsola De Marco, Juhan Frank, Geoffrey C. Clayton, Patrick M. Motl, Patrick Diehl, Hartmut Kaiser, "Octo-Tiger: A New, 3D Hydrodynamic Code for Stellar Mergers that uses HPX Parallelisation", accepted for publication in the Monthly Notices of the Royal Astronomical Society, 2021
 
-For more publication, we refer to Octo-Tigers' [documentation](https://stellar-group.github.io/octotiger/doc/html/md_content_publications.html).
+For more publications, refer to Octo-Tigers' [documentation](https://stellar-group.github.io/octotiger/doc/html/md_content_publications.html).
 
 
 # Funding
